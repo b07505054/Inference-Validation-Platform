@@ -1,0 +1,188 @@
+{
+  "artifact": {
+    "artifact_id": "cv_execution_plan_retry_demo",
+    "artifact_type": "execution_plan",
+    "source_repo": "ml-graph-compiler-runtime",
+    "artifact_path": "../ml-graph-compiler-runtime/trace/cv_execution_plan_v2.json",
+    "required_backends": [
+      "cpu",
+      "mock_gpu"
+    ],
+    "latency_budget_ms": 5.0,
+    "correctness_required": true
+  },
+  "validation_result": {
+    "job_id": "job-001",
+    "artifact_id": "cv_execution_plan_retry_demo",
+    "device_id": "mock-asic-worker-1",
+    "backend": "mock_gpu",
+    "correctness_passed": true,
+    "avg_latency_ms": 3.382,
+    "p95_latency_ms": 4.2275,
+    "p99_latency_ms": 4.9039,
+    "passed_latency_budget": true,
+    "retry_count": 1
+  },
+  "fleet_snapshot": [
+    {
+      "device_id": "cpu-worker-1",
+      "backend": "cpu",
+      "status": "quarantined",
+      "queue_depth": 0,
+      "avg_latency_ms": 1.0,
+      "last_error": "latency budget failed",
+      "missed_heartbeats": 0
+    },
+    {
+      "device_id": "mock-asic-worker-1",
+      "backend": "mock_gpu",
+      "status": "healthy",
+      "queue_depth": 0,
+      "avg_latency_ms": 3.382,
+      "last_error": null,
+      "missed_heartbeats": 0
+    },
+    {
+      "device_id": "stale-cuda-worker-1",
+      "backend": "cuda",
+      "status": "offline",
+      "queue_depth": 0,
+      "avg_latency_ms": null,
+      "last_error": "missed heartbeat threshold exceeded",
+      "missed_heartbeats": 3
+    }
+  ],
+  "event_timeline": [
+    {
+      "timestamp_ms": 1779996562654.938,
+      "event_type": "job.submitted",
+      "message": "submitted compiler-produced artifact for validation",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": null,
+      "details": {
+        "artifact_type": "execution_plan",
+        "required_backends": [
+          "cpu",
+          "mock_gpu"
+        ],
+        "latency_budget_ms": 5.0
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.01,
+      "event_type": "heartbeat.received",
+      "message": "cpu worker reported healthy heartbeat",
+      "job_id": null,
+      "artifact_id": null,
+      "device_id": "cpu-worker-1",
+      "details": {
+        "backend": "cpu",
+        "utilization": 0.15,
+        "last_latency_ms": 1.0
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.018,
+      "event_type": "heartbeat.received",
+      "message": "mock accelerator worker reported healthy heartbeat",
+      "job_id": null,
+      "artifact_id": null,
+      "device_id": "mock-asic-worker-1",
+      "details": {
+        "backend": "mock_gpu",
+        "utilization": 0.35,
+        "last_latency_ms": 2.2
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.024,
+      "event_type": "heartbeat.missed_threshold",
+      "message": "stale cuda worker marked offline after 3 missed heartbeats",
+      "job_id": null,
+      "artifact_id": null,
+      "device_id": "stale-cuda-worker-1",
+      "details": {
+        "missed_heartbeats": 3,
+        "status": "offline"
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.03,
+      "event_type": "scheduler.selected_device",
+      "message": "selected cpu-worker-1 for validation attempt 0",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": "cpu-worker-1",
+      "details": {
+        "backend": "cpu",
+        "queue_depth": 0,
+        "avg_latency_ms": 1.0,
+        "attempt": 0
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.048,
+      "event_type": "validation.failed",
+      "message": "latency budget failed",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": "cpu-worker-1",
+      "details": {
+        "job_id": "job-001",
+        "artifact_id": "cv_execution_plan_retry_demo",
+        "device_id": "cpu-worker-1",
+        "backend": "cpu",
+        "correctness_passed": true,
+        "avg_latency_ms": 4.5764,
+        "p95_latency_ms": 5.7205,
+        "p99_latency_ms": 6.6358,
+        "passed_latency_budget": false,
+        "retry_count": 0
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.05,
+      "event_type": "device.quarantined",
+      "message": "cpu-worker-1 quarantined: latency budget failed",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": "cpu-worker-1",
+      "details": {}
+    },
+    {
+      "timestamp_ms": 1779996562655.055,
+      "event_type": "scheduler.selected_device",
+      "message": "selected mock-asic-worker-1 for validation attempt 1",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": "mock-asic-worker-1",
+      "details": {
+        "backend": "mock_gpu",
+        "queue_depth": 0,
+        "avg_latency_ms": 2.2,
+        "attempt": 1
+      }
+    },
+    {
+      "timestamp_ms": 1779996562655.068,
+      "event_type": "validation.passed",
+      "message": "validation passed correctness and latency budget",
+      "job_id": "job-001",
+      "artifact_id": "cv_execution_plan_retry_demo",
+      "device_id": "mock-asic-worker-1",
+      "details": {
+        "job_id": "job-001",
+        "artifact_id": "cv_execution_plan_retry_demo",
+        "device_id": "mock-asic-worker-1",
+        "backend": "mock_gpu",
+        "correctness_passed": true,
+        "avg_latency_ms": 3.382,
+        "p95_latency_ms": 4.2275,
+        "p99_latency_ms": 4.9039,
+        "passed_latency_budget": true,
+        "retry_count": 1
+      }
+    }
+  ]
+}

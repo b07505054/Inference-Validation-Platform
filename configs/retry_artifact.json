@@ -1,0 +1,9 @@
+{
+  "artifact_id": "cv_execution_plan_retry_demo",
+  "artifact_type": "execution_plan",
+  "source_repo": "ml-graph-compiler-runtime",
+  "artifact_path": "../ml-graph-compiler-runtime/trace/cv_execution_plan_v2.json",
+  "required_backends": ["cpu", "mock_gpu"],
+  "latency_budget_ms": 5.0,
+  "correctness_required": true
+}
