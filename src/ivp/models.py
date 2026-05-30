@@ -76,3 +76,37 @@ class PlatformEvent(BaseModel):
     artifact_id: str | None = None
     device_id: str | None = None
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class LLMRequestTimelineEntry(BaseModel):
+    request_id: str
+    arrival_ms: float
+    prefill_start_ms: float
+    decode_start_ms: float
+    finish_ms: float
+    status: str
+
+
+class LLMValidationReport(BaseModel):
+    job_id: str
+    passed: bool
+    latency_budget_ms: float
+    p95_decode_latency_ms: float
+    correctness_passed: bool
+    max_logit_diff: float
+    peak_memory_mb: float
+
+
+class SchedulerAnalysis(BaseModel):
+    avg_queue_wait_ms: float
+    p95_queue_wait_ms: float
+    max_active_requests: int
+    decode_batch_efficiency: float
+
+
+class KVCacheAnalysis(BaseModel):
+    peak_blocks_used: int
+    block_utilization: float
+    fragmentation_ratio: float
+    evictions: int
+    failed_allocations: int
