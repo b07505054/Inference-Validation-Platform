@@ -18,9 +18,15 @@ class DeviceInventory:
         device = self.devices[device_id]
         device.status = DeviceStatus.QUARANTINED
         device.last_error = reason
+        device.queue_depth = max(0, device.queue_depth - 1)
 
     def mark_busy(self, device_id: str) -> None:
-        self.devices[device_id].status = DeviceStatus.BUSY
+        device = self.devices[device_id]
+        device.queue_depth += 1
+
+        slot_capacity = device.resource_capacity.get("slots", 1)
+        if device.queue_depth >= slot_capacity:
+            device.status = DeviceStatus.BUSY
 
     def mark_healthy(self, device_id: str, latency_ms: float) -> None:
         device = self.devices[device_id]

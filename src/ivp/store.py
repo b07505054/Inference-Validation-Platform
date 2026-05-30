@@ -84,6 +84,15 @@ class SQLiteStore:
         resource_capacity: dict[str, int] | None = None,
     ) -> None:
         now = time.time() * 1000
+        labels = labels if labels is not None else device.labels
+        resource_capacity = (
+            resource_capacity
+            if resource_capacity is not None
+            else device.resource_capacity
+        )
+        firmware_version = firmware_version or device.firmware_version
+        hardware_generation = hardware_generation or device.hardware_generation
+
         with self.lock:
             self.conn.execute(
                 """

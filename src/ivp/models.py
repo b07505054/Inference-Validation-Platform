@@ -11,6 +11,16 @@ class DeviceStatus(str, Enum):
     OFFLINE = "offline"
 
 
+class SchedulingConstraints(BaseModel):
+    required_labels: dict[str, str] = Field(default_factory=dict)
+    preferred_labels: dict[str, str] = Field(default_factory=dict)
+    resource_requests: dict[str, int] = Field(default_factory=dict)
+    preferred_devices: list[str] = Field(default_factory=list)
+    avoid_devices: list[str] = Field(default_factory=list)
+    allow_preemption: bool = False
+    priority: int = 0
+
+
 class ArtifactSpec(BaseModel):
     artifact_id: str
     artifact_type: str
@@ -19,6 +29,7 @@ class ArtifactSpec(BaseModel):
     required_backends: list[str]
     latency_budget_ms: float
     correctness_required: bool = True
+    scheduling: SchedulingConstraints = Field(default_factory=SchedulingConstraints)
 
 
 class Device(BaseModel):
@@ -29,6 +40,10 @@ class Device(BaseModel):
     avg_latency_ms: float | None = None
     last_error: str | None = None
     missed_heartbeats: int = 0
+    firmware_version: str | None = None
+    hardware_generation: str | None = None
+    labels: dict[str, str] = Field(default_factory=dict)
+    resource_capacity: dict[str, int] = Field(default_factory=dict)
 
 
 class ValidationResult(BaseModel):

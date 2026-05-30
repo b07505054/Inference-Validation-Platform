@@ -29,6 +29,10 @@ def register_worker(request: RegisterWorkerRequest) -> dict:
     device = Device(
         device_id=request.device_id,
         backend=request.backend,
+        firmware_version=request.firmware_version,
+        hardware_generation=request.hardware_generation,
+        labels=request.labels,
+        resource_capacity=request.resource_capacity,
     )
 
     inventory.register(device)
