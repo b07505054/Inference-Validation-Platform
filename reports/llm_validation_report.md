@@ -7,6 +7,20 @@
 **Max logit diff:** 0.000800
 **Peak memory:** 1240.0 MB
 
+## SLO Report
+
+| Metric | Value |
+|---|---:|
+| SLO passed | `True` |
+| TTFT p95 | 412.8000 ms |
+| TPOT p95 | 15.9000 ms |
+| E2E p95 | 1170.2000 ms |
+| Queue wait p95 | 38.1000 ms |
+| SLO violation rate | 0.0470 |
+| Admission rejection rate | 0.0470 |
+| Tokens/sec | 84.7000 |
+| Requests/sec | 2.8000 |
+
 ## Scheduler Analysis
 
 | Metric | Value |

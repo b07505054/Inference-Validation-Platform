@@ -110,3 +110,17 @@ class KVCacheAnalysis(BaseModel):
     fragmentation_ratio: float
     evictions: int
     failed_allocations: int
+
+
+class SLOReport(BaseModel):
+    job_id: str
+    passed: bool
+    ttft_p95_ms: float
+    tpot_p95_ms: float
+    e2e_p95_ms: float
+    queue_wait_p95_ms: float
+    slo_violation_rate: float
+    admission_rejection_rate: float
+    tokens_per_second: float
+    requests_per_second: float
+    latency_budget_ms: float

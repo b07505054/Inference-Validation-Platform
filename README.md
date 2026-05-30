@@ -380,6 +380,7 @@ Expected outputs:
 
 ```text
 reports/llm_validation_report.json
+reports/slo_report.json
 reports/request_timeline.json
 reports/scheduler_analysis.json
 reports/kv_cache_analysis.json
@@ -397,6 +398,24 @@ reports/llm_validation_report.md
   "correctness_passed": true,
   "max_logit_diff": 0.0008,
   "peak_memory_mb": 1240
+}
+```
+
+### `slo_report.json`
+
+```json
+{
+  "job_id": "llm-runtime-demo-001",
+  "passed": true,
+  "ttft_p95_ms": 412.8,
+  "tpot_p95_ms": 15.9,
+  "e2e_p95_ms": 1170.2,
+  "queue_wait_p95_ms": 38.1,
+  "slo_violation_rate": 0.047,
+  "admission_rejection_rate": 0.047,
+  "tokens_per_second": 84.7,
+  "requests_per_second": 2.8,
+  "latency_budget_ms": 20.0
 }
 ```
 

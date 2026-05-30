@@ -6,6 +6,7 @@ from .models import (
     KVCacheAnalysis,
     LLMRequestTimelineEntry,
     LLMValidationReport,
+    SLOReport,
     SchedulerAnalysis,
 )
 
@@ -143,6 +144,39 @@ def build_kv_cache_analysis() -> KVCacheAnalysis:
     )
 
 
+def build_slo_report(
+    job_id: str,
+    latency_budget_ms: float,
+    validation: LLMValidationReport,
+    scheduler: SchedulerAnalysis,
+) -> SLOReport:
+    ttft_p95_ms = 412.8
+    tpot_p95_ms = validation.p95_decode_latency_ms
+    e2e_p95_ms = 1170.2
+    slo_violation_rate = 0.047
+    admission_rejection_rate = 0.047
+
+    return SLOReport(
+        job_id=job_id,
+        passed=(
+            validation.passed
+            and ttft_p95_ms <= 500.0
+            and tpot_p95_ms <= latency_budget_ms
+            and e2e_p95_ms <= 1200.0
+            and slo_violation_rate <= 0.05
+        ),
+        ttft_p95_ms=ttft_p95_ms,
+        tpot_p95_ms=tpot_p95_ms,
+        e2e_p95_ms=e2e_p95_ms,
+        queue_wait_p95_ms=scheduler.p95_queue_wait_ms,
+        slo_violation_rate=slo_violation_rate,
+        admission_rejection_rate=admission_rejection_rate,
+        tokens_per_second=84.7,
+        requests_per_second=2.8,
+        latency_budget_ms=latency_budget_ms,
+    )
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -151,6 +185,7 @@ def write_json(path: Path, payload: dict) -> None:
 def write_llm_markdown_report(
     path: Path,
     validation: LLMValidationReport,
+    slo: SLOReport,
     scheduler: SchedulerAnalysis,
     kv_cache: KVCacheAnalysis,
     requests: list[LLMRequestTimelineEntry],
@@ -167,6 +202,20 @@ def write_llm_markdown_report(
         f"**Correctness passed:** `{validation.correctness_passed}`",
         f"**Max logit diff:** {validation.max_logit_diff:.6f}",
         f"**Peak memory:** {validation.peak_memory_mb:.1f} MB",
+        "",
+        "## SLO Report",
+        "",
+        "| Metric | Value |",
+        "|---|---:|",
+        f"| SLO passed | `{slo.passed}` |",
+        f"| TTFT p95 | {slo.ttft_p95_ms:.4f} ms |",
+        f"| TPOT p95 | {slo.tpot_p95_ms:.4f} ms |",
+        f"| E2E p95 | {slo.e2e_p95_ms:.4f} ms |",
+        f"| Queue wait p95 | {slo.queue_wait_p95_ms:.4f} ms |",
+        f"| SLO violation rate | {slo.slo_violation_rate:.4f} |",
+        f"| Admission rejection rate | {slo.admission_rejection_rate:.4f} |",
+        f"| Tokens/sec | {slo.tokens_per_second:.4f} |",
+        f"| Requests/sec | {slo.requests_per_second:.4f} |",
         "",
         "## Scheduler Analysis",
         "",
@@ -226,9 +275,16 @@ def generate_llm_demo_artifacts(
     )
     scheduler = build_scheduler_analysis(requests)
     kv_cache = build_kv_cache_analysis()
+    slo = build_slo_report(
+        job_id=job_id,
+        latency_budget_ms=latency_budget_ms,
+        validation=validation,
+        scheduler=scheduler,
+    )
 
     paths = {
         "llm_validation_report_json": output_dir / "llm_validation_report.json",
+        "slo_report_json": output_dir / "slo_report.json",
         "request_timeline_json": output_dir / "request_timeline.json",
         "scheduler_analysis_json": output_dir / "scheduler_analysis.json",
         "kv_cache_analysis_json": output_dir / "kv_cache_analysis.json",
@@ -236,6 +292,7 @@ def generate_llm_demo_artifacts(
     }
 
     write_json(paths["llm_validation_report_json"], validation.model_dump())
+    write_json(paths["slo_report_json"], slo.model_dump())
     write_json(
         paths["request_timeline_json"],
         {
@@ -250,6 +307,7 @@ def generate_llm_demo_artifacts(
     write_llm_markdown_report(
         paths["llm_validation_report_md"],
         validation=validation,
+        slo=slo,
         scheduler=scheduler,
         kv_cache=kv_cache,
         requests=requests,
