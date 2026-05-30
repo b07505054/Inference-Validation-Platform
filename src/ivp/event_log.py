@@ -5,8 +5,9 @@ from .models import PlatformEvent
 
 
 class EventLog:
-    def __init__(self) -> None:
+    def __init__(self, store=None) -> None:
         self.events: list[PlatformEvent] = []
+        self.store = store
 
     def record(
         self,
@@ -17,17 +18,19 @@ class EventLog:
         device_id: str | None = None,
         details: dict[str, Any] | None = None,
     ) -> None:
-        self.events.append(
-            PlatformEvent(
-                timestamp_ms=round(time.time() * 1000, 3),
-                event_type=event_type,
-                message=message,
-                job_id=job_id,
-                artifact_id=artifact_id,
-                device_id=device_id,
-                details=details or {},
-            )
+        event = PlatformEvent(
+            timestamp_ms=round(time.time() * 1000, 3),
+            event_type=event_type,
+            message=message,
+            job_id=job_id,
+            artifact_id=artifact_id,
+            device_id=device_id,
+            details=details or {},
         )
+        self.events.append(event)
+
+        if self.store is not None:
+            self.store.record_event(event)
 
     def snapshot(self) -> list[PlatformEvent]:
         return list(self.events)

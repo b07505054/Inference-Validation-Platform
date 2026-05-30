@@ -1,7 +1,12 @@
 import json
 import argparse
+import sys
 
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 from src.ivp.event_log import EventLog
 from src.ivp.inventory import DeviceInventory
 from src.ivp.report import write_markdown_report, write_report
@@ -9,9 +14,6 @@ from src.ivp.scheduler import Scheduler
 from src.ivp.validation import ValidationPipeline
 from src.ivp.heartbeat import HeartbeatMonitor
 from src.ivp.models import ArtifactSpec, Device, Heartbeat
-
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:

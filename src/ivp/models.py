@@ -1,6 +1,8 @@
 from enum import Enum
-from pydantic import BaseModel
 from typing import Any
+
+from pydantic import BaseModel, Field
+
 
 class DeviceStatus(str, Enum):
     HEALTHY = "healthy"
@@ -40,6 +42,8 @@ class ValidationResult(BaseModel):
     p99_latency_ms: float
     passed_latency_budget: bool
     retry_count: int = 0
+
+
 class Heartbeat(BaseModel):
     device_id: str
     backend: str
@@ -47,7 +51,8 @@ class Heartbeat(BaseModel):
     utilization: float
     last_latency_ms: float | None = None
     error: str | None = None
-    
+
+
 class PlatformEvent(BaseModel):
     timestamp_ms: float
     event_type: str
@@ -55,4 +60,4 @@ class PlatformEvent(BaseModel):
     job_id: str | None = None
     artifact_id: str | None = None
     device_id: str | None = None
-    details: dict[str, Any] = {}
+    details: dict[str, Any] = Field(default_factory=dict)
