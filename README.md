@@ -4,6 +4,12 @@ A mini ML systems platform that schedules compiler-produced inference artifacts 
 
 This project simulates the infrastructure layer between an ML compiler/runtime stack and real hardware execution.
 
+In one sentence:
+
+```text
+Validation platform turns runtime traces into correctness, latency, memory, and scheduling reports.
+```
+
 ## Why This Exists
 
 Modern AI hardware teams need more than model benchmarks. They need infrastructure that can answer:
@@ -73,6 +79,81 @@ JSON report + Markdown report
 - Fleet snapshot reporting
 - Event timeline for debugging scheduling decisions
 - Human-readable Markdown validation report
+- FastAPI control plane for worker registration, heartbeat, job submission, and report lookup
+- SQLite persistence for jobs, devices, heartbeats, and event timelines
+- Firmware version, hardware generation, labels, and resource capacity tracking
+- Kubernetes-style scheduling constraints including required labels, preferred labels, resource requests, preferred devices, avoided devices, priority, and preemption metadata
+
+## Control Plane API
+
+Run the API server:
+
+```bash
+uvicorn src.ivp.api:app --reload
+```
+
+Supported endpoints:
+
+```text
+POST /workers/register
+POST /workers/heartbeat
+POST /jobs/submit
+GET  /reports/{job_id}
+GET  /devices
+```
+
+Example worker registration:
+
+```bash
+curl -X POST http://127.0.0.1:8000/workers/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": "mock-asic-worker-1",
+    "backend": "mock_gpu",
+    "firmware_version": "fw-mockasic-1.0",
+    "hardware_generation": "mock-asic-v1",
+    "labels": {
+      "region": "local",
+      "accelerator": "mock_asic"
+    },
+    "resource_capacity": {
+      "slots": 4
+    }
+  }'
+```
+
+Example constrained job submission:
+
+```json
+{
+  "job_id": "api-job-k8s-001",
+  "max_retries": 1,
+  "artifact": {
+    "artifact_id": "cv_execution_plan_k8s_demo",
+    "artifact_type": "execution_plan",
+    "source_repo": "ml-graph-compiler-runtime",
+    "artifact_path": "../ml-graph-compiler-runtime/trace/cv_execution_plan_v2.json",
+    "required_backends": ["cpu", "mock_gpu"],
+    "latency_budget_ms": 5.0,
+    "correctness_required": true,
+    "scheduling": {
+      "required_labels": {
+        "accelerator": "mock_asic"
+      },
+      "preferred_labels": {
+        "tier": "validation"
+      },
+      "resource_requests": {
+        "slots": 1
+      },
+      "preferred_devices": ["mock-asic-worker-1"],
+      "avoid_devices": [],
+      "allow_preemption": false,
+      "priority": 10
+    }
+  }
+}
+```
 
 ## Demo: Happy Path
 
@@ -125,7 +206,7 @@ Example final result:
 ```text
 Result: PASS
 Final backend: mock_gpu
-Restart count: 1
+Retry count: 1
 cpu-worker-1: quarantined
 stale-cuda-worker-1: offline
 mock-asic-worker-1: healthy
@@ -145,7 +226,7 @@ Latency budget: p95 <= 5.0000 ms
 Final device: mock-asic-worker-1
 Backend: mock_gpu
 p95 latency: 3.1765 ms
-Restart count: 1
+Retry count: 1
 
 Fleet Snapshot:
 cpu-worker-1         quarantined
@@ -175,6 +256,9 @@ This project models infrastructure patterns used in production AI hardware and i
 - Latency regression detection
 - Runtime validation reporting
 - Developer-facing debug traces
+- Control-plane APIs for accelerator fleet validation
+- Persistent job/device/event state
+- Kubernetes-style scheduling concepts for heterogeneous inference workers
 
 It is intentionally small, but the control-plane shape mirrors real systems used by AI infrastructure, accelerator runtime, robotics, and on-device ML teams.
 
@@ -193,11 +277,14 @@ inference-validation-platform/
 └── src/
     └── ivp/
         ├── event_log.py
+        ├── api.py
+        ├── api_models.py
         ├── heartbeat.py
         ├── inventory.py
         ├── models.py
         ├── report.py
         ├── scheduler.py
+        ├── store.py
         ├── validation.py
         └── worker.py
 ```
@@ -220,6 +307,28 @@ Compiler/runtime outputs are represented as explicit artifact specs:
 }
 ```
 
+Artifact specs can also carry scheduler constraints:
+
+```json
+{
+  "scheduling": {
+    "required_labels": {
+      "accelerator": "mock_asic"
+    },
+    "preferred_labels": {
+      "tier": "validation"
+    },
+    "resource_requests": {
+      "slots": 1
+    },
+    "preferred_devices": ["mock-asic-worker-1"],
+    "avoid_devices": [],
+    "allow_preemption": false,
+    "priority": 10
+  }
+}
+```
+
 ### Health-Aware Scheduling
 
 The scheduler filters out unhealthy devices and ranks candidates by:
@@ -229,6 +338,10 @@ queue depth
 historical latency
 backend suitability
 excluded devices from failed attempts
+required labels
+preferred labels
+resource capacity
+preferred / avoided devices
 ```
 
 ### Self-Healing Behavior
@@ -258,6 +371,78 @@ scheduler excludes device
 ## Resume-Ready Summary
 
 Built a heterogeneous inference validation platform that schedules compiler-produced execution artifacts across CPU and mock accelerator workers, validates correctness and p95 latency budgets, tracks worker health via heartbeat, marks stale devices offline, quarantines unstable workers, automatically reschedules failed jobs, and emits JSON/Markdown reports with fleet snapshots and event timelines.
+
+## LLM Runtime Demo Artifacts
+
+The next integration target is an LLM runtime validation demo. This project is responsible for proving that the runtime is correct, stable, and measurable.
+
+Expected outputs:
+
+```text
+reports/llm_validation_report.json
+reports/request_timeline.json
+reports/scheduler_analysis.json
+reports/kv_cache_analysis.json
+reports/llm_validation_report.md
+```
+
+### `llm_validation_report.json`
+
+```json
+{
+  "job_id": "llm-runtime-demo-001",
+  "passed": true,
+  "latency_budget_ms": 20,
+  "p95_decode_latency_ms": 15.9,
+  "correctness_passed": true,
+  "max_logit_diff": 0.0008,
+  "peak_memory_mb": 1240
+}
+```
+
+### `request_timeline.json`
+
+```json
+{
+  "requests": [
+    {
+      "request_id": "req-001",
+      "arrival_ms": 0,
+      "prefill_start_ms": 2,
+      "decode_start_ms": 190,
+      "finish_ms": 820,
+      "status": "completed"
+    }
+  ]
+}
+```
+
+### `scheduler_analysis.json`
+
+```json
+{
+  "avg_queue_wait_ms": 12.4,
+  "p95_queue_wait_ms": 38.1,
+  "max_active_requests": 8,
+  "decode_batch_efficiency": 0.82
+}
+```
+
+### `kv_cache_analysis.json`
+
+```json
+{
+  "peak_blocks_used": 812,
+  "block_utilization": 0.79,
+  "fragmentation_ratio": 0.08,
+  "evictions": 0,
+  "failed_allocations": 0
+}
+```
+
+### `llm_validation_report.md`
+
+Human-readable report for interviews and demos. It summarizes correctness, latency, memory, request scheduling, and KV-cache behavior.
 
 ## Next Extensions
 
