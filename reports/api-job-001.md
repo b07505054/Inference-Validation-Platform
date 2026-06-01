@@ -1,7 +1,7 @@
-# Inference Validation Report: job-001
+# Inference Validation Report: api-job-001
 
 **Result:** PASS
-**Artifact:** `cv_execution_plan_v1`
+**Artifact:** `cv_execution_plan_api_demo`
 **Artifact type:** `execution_plan`
 **Source repo:** `ml-graph-compiler-runtime`
 **Latency budget:** p95 <= 5.0000 ms
@@ -13,9 +13,9 @@
 | Device | `mock-asic-worker-1` |
 | Backend | `mock_gpu` |
 | Correctness | `True` |
-| Avg latency | 2.4286 ms |
-| p95 latency | 3.0358 ms |
-| p99 latency | 3.5215 ms |
+| Avg latency | 3.0322 ms |
+| p95 latency | 3.7902 ms |
+| p99 latency | 4.3967 ms |
 | Passed latency budget | `True` |
 | Retry count | 0 |
 
@@ -24,16 +24,12 @@
 | Device | Backend | Status | Avg latency | Last error | Missed heartbeats |
 |---|---|---|---:|---|---:|
 | `cpu-worker-1` | `cpu` | `healthy` | 4.8000 ms |  | 0 |
-| `mock-asic-worker-1` | `mock_gpu` | `healthy` | 2.4286 ms |  | 0 |
-| `stale-cuda-worker-1` | `cuda` | `offline` | n/a | missed heartbeat threshold exceeded | 3 |
+| `mock-asic-worker-1` | `mock_gpu` | `healthy` | 3.0322 ms |  | 0 |
 
 ## Event Timeline
 
 | Event | Device | Message |
 |---|---|---|
 | `job.submitted` |  | submitted compiler-produced artifact for validation |
-| `heartbeat.received` | `cpu-worker-1` | cpu worker reported healthy heartbeat |
-| `heartbeat.received` | `mock-asic-worker-1` | mock accelerator worker reported healthy heartbeat |
-| `heartbeat.missed_threshold` | `stale-cuda-worker-1` | stale cuda worker marked offline after 3 missed heartbeats |
 | `scheduler.selected_device` | `mock-asic-worker-1` | selected mock-asic-worker-1 for validation attempt 0 |
 | `validation.passed` | `mock-asic-worker-1` | validation passed correctness and latency budget |

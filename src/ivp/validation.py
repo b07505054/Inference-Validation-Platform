@@ -2,7 +2,7 @@ from .event_log import EventLog
 from .inventory import DeviceInventory
 from .models import ArtifactSpec, ValidationResult
 from .scheduler import Scheduler
-from .worker import MockWorker
+from .worker import ExternalRuntimeWorker, MockWorker
 
 
 class ValidationPipeline:
@@ -45,7 +45,8 @@ class ValidationPipeline:
 
             self.inventory.mark_busy(device.device_id)
 
-            result = MockWorker(device).run_validation(
+            worker = self._create_worker(artifact, device)
+            result = worker.run_validation(
                 job_id=job_id,
                 artifact=artifact,
             )
@@ -100,3 +101,12 @@ class ValidationPipeline:
             raise RuntimeError("validation did not run")
 
         return last_result
+
+    def _create_worker(self, artifact: ArtifactSpec, device):
+        if artifact.artifact_type in {
+            "external_runtime_summary",
+            "external_runtime_benchmark",
+        }:
+            return ExternalRuntimeWorker(device)
+
+        return MockWorker(device)

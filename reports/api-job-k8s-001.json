@@ -1,0 +1,135 @@
+{
+  "artifact": {
+    "artifact_id": "cv_execution_plan_k8s_demo",
+    "artifact_type": "execution_plan",
+    "source_repo": "ml-graph-compiler-runtime",
+    "artifact_path": "../ml-graph-compiler-runtime/trace/cv_execution_plan_v2.json",
+    "required_backends": [
+      "cpu",
+      "mock_gpu"
+    ],
+    "latency_budget_ms": 5.0,
+    "correctness_required": true,
+    "scheduling": {
+      "required_labels": {
+        "accelerator": "mock_asic"
+      },
+      "preferred_labels": {
+        "tier": "validation"
+      },
+      "resource_requests": {
+        "slots": 1
+      },
+      "preferred_devices": [
+        "mock-asic-worker-k8s"
+      ],
+      "avoid_devices": [],
+      "allow_preemption": false,
+      "priority": 10
+    }
+  },
+  "validation_result": {
+    "job_id": "api-job-k8s-001",
+    "artifact_id": "cv_execution_plan_k8s_demo",
+    "device_id": "mock-asic-worker-k8s",
+    "backend": "mock_gpu",
+    "correctness_passed": true,
+    "avg_latency_ms": 2.9929,
+    "p95_latency_ms": 3.7411,
+    "p99_latency_ms": 4.3397,
+    "passed_latency_budget": true,
+    "retry_count": 0
+  },
+  "fleet_snapshot": [
+    {
+      "device_id": "cpu-worker-k8s",
+      "backend": "cpu",
+      "status": "healthy",
+      "queue_depth": 0,
+      "avg_latency_ms": 1.0,
+      "last_error": null,
+      "missed_heartbeats": 0,
+      "firmware_version": "fw-cpu-2026.05",
+      "hardware_generation": "x86-devbox",
+      "labels": {
+        "region": "local",
+        "backend": "cpu",
+        "tier": "general"
+      },
+      "resource_capacity": {
+        "slots": 1
+      }
+    },
+    {
+      "device_id": "mock-asic-worker-k8s",
+      "backend": "mock_gpu",
+      "status": "healthy",
+      "queue_depth": 0,
+      "avg_latency_ms": 2.9929,
+      "last_error": null,
+      "missed_heartbeats": 0,
+      "firmware_version": "fw-mockasic-1.0",
+      "hardware_generation": "mock-asic-v1",
+      "labels": {
+        "region": "local",
+        "accelerator": "mock_asic",
+        "tier": "validation"
+      },
+      "resource_capacity": {
+        "slots": 4
+      }
+    }
+  ],
+  "event_timeline": [
+    {
+      "timestamp_ms": 1780110990497.89,
+      "event_type": "job.submitted",
+      "message": "submitted compiler-produced artifact for validation",
+      "job_id": "api-job-k8s-001",
+      "artifact_id": "cv_execution_plan_k8s_demo",
+      "device_id": null,
+      "details": {
+        "artifact_type": "execution_plan",
+        "required_backends": [
+          "cpu",
+          "mock_gpu"
+        ],
+        "latency_budget_ms": 5.0
+      }
+    },
+    {
+      "timestamp_ms": 1780110990498.384,
+      "event_type": "scheduler.selected_device",
+      "message": "selected mock-asic-worker-k8s for validation attempt 0",
+      "job_id": "api-job-k8s-001",
+      "artifact_id": "cv_execution_plan_k8s_demo",
+      "device_id": "mock-asic-worker-k8s",
+      "details": {
+        "backend": "mock_gpu",
+        "queue_depth": 0,
+        "avg_latency_ms": 2.2,
+        "attempt": 0
+      }
+    },
+    {
+      "timestamp_ms": 1780110990498.847,
+      "event_type": "validation.passed",
+      "message": "validation passed correctness and latency budget",
+      "job_id": "api-job-k8s-001",
+      "artifact_id": "cv_execution_plan_k8s_demo",
+      "device_id": "mock-asic-worker-k8s",
+      "details": {
+        "job_id": "api-job-k8s-001",
+        "artifact_id": "cv_execution_plan_k8s_demo",
+        "device_id": "mock-asic-worker-k8s",
+        "backend": "mock_gpu",
+        "correctness_passed": true,
+        "avg_latency_ms": 2.9929,
+        "p95_latency_ms": 3.7411,
+        "p99_latency_ms": 4.3397,
+        "passed_latency_budget": true,
+        "retry_count": 0
+      }
+    }
+  ]
+}

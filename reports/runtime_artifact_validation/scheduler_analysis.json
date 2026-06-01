@@ -1,0 +1,10 @@
+{
+  "source": "heterogeneous-inference-runtime/scheduler_trace.json",
+  "policy": "prefill-first-with-batched-decode",
+  "decode_batch_events": 130,
+  "avg_decode_batch_size": 1.0,
+  "max_active_requests": 1,
+  "avg_queue_wait_ms": 9.4635,
+  "p95_queue_wait_ms": 17.87,
+  "decode_batch_efficiency": 0.125
+}

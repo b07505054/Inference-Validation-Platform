@@ -23,6 +23,11 @@ Modern AI hardware teams need more than model benchmarks. They need infrastructu
 
 This repo implements a small but complete version of that workflow.
 
+It supports two validation modes:
+
+- Control-plane simulation for worker health, quarantine, retry, and scheduling behavior.
+- Runtime artifact validation for traces produced by `heterogeneous-inference-runtime`, including LLM prefill/decode latency, KV-cache allocation, scheduler events, backend placement, and serving traces.
+
 ## Connected Repos
 
 This platform is designed to sit above two existing systems projects:
@@ -44,7 +49,9 @@ Inference Validation Platform
     ↓
 CPU / CUDA / Metal / Mock accelerator workers
     ↓
-Validation result + fleet health + event timeline
+Runtime trace ingestion from heterogeneous-inference-runtime
+    ↓
+Validation result + fleet health + event timeline + SLO report
 ```
 
 ## Architecture
@@ -83,6 +90,12 @@ JSON report + Markdown report
 - SQLite persistence for jobs, devices, heartbeats, and event timelines
 - Firmware version, hardware generation, labels, and resource capacity tracking
 - Kubernetes-style scheduling constraints including required labels, preferred labels, resource requests, preferred devices, avoided devices, priority, and preemption metadata
+- Cross-repo runtime artifact ingestion from `heterogeneous-inference-runtime`
+- LLM prefill/decode validation reports
+- KV-cache block allocation analysis
+- Scheduler trace analysis
+- Heterogeneous backend placement validation
+- Runtime SLO report generation
 
 ## Control Plane API
 
@@ -180,6 +193,119 @@ Generated files:
 reports/job-001.json
 reports/job-001.md
 ```
+
+## Runtime Artifact Validation
+
+The platform can validate runtime artifacts produced by
+`heterogeneous-inference-runtime` instead of only relying on mock worker
+simulation.
+
+There are two supported paths:
+
+- `external_runtime_summary`: read an existing
+  `heterogeneous-inference-runtime/results/backend_validation_summary.json`
+  artifact and convert it into an IVP validation result.
+- `external_runtime_benchmark`: invoke
+  `heterogeneous-inference-runtime/backend_validation_runner.py`, then validate
+  the generated `backend_validation_summary.json`.
+
+Run backend summary validation:
+
+```bash
+python3 scripts/run_external_runtime_validation.py \
+  --artifact configs/external_runtime_summary_artifact.json \
+  --job-id external-runtime-job-001 \
+  --output-prefix reports/external-runtime-job-001
+```
+
+Generated outputs:
+
+```text
+reports/external-runtime-job-001.json
+reports/external-runtime-job-001.md
+```
+
+The live benchmark version uses:
+
+```bash
+python3 scripts/run_external_runtime_validation.py \
+  --artifact configs/external_runtime_live_artifact.json \
+  --job-id external-runtime-live-job-001 \
+  --output-prefix reports/external-runtime-live-job-001
+```
+
+This closes the core gap in the original mock-only validation path:
+
+```text
+submit artifact
+  -> schedule external runtime worker
+  -> read or invoke heterogeneous-inference-runtime benchmark runner
+  -> select measured backend result
+  -> validate p95 latency budget
+  -> emit JSON / Markdown report
+```
+
+Expected source artifacts:
+
+```text
+../heterogeneous-inference-runtime/results/llm_runtime_artifacts/
+├── prefill_decode_benchmark.json
+├── kv_cache_trace.json
+├── scheduler_trace.json
+├── backend_trace.json
+├── runtime_profile.json
+└── serving_trace.json
+```
+
+Run validation:
+
+```bash
+python3 scripts/validate_runtime_artifacts.py \
+  --runtime-artifact-dir ../heterogeneous-inference-runtime/results/llm_runtime_artifacts \
+  --output-dir reports/runtime_artifact_validation
+```
+
+Generated outputs:
+
+```text
+reports/runtime_artifact_validation/
+├── backend_validation_report.json
+├── kv_cache_analysis.json
+├── llm_validation_report.json
+├── request_timeline.json
+├── runtime_profile_imported.json
+├── runtime_validation_report.json
+├── runtime_validation_report.md
+├── scheduler_analysis.json
+├── slo_report.json
+└── manifest.json
+```
+
+This workflow checks:
+
+- prefill latency
+- p95 / p99 decode latency
+- end-to-end request latency
+- queue wait time
+- KV-cache block utilization and fragmentation
+- OOM / admission rejection behavior
+- scheduler decode batch behavior
+- CPU/GPU backend placement
+
+Example summary:
+
+```text
+Result: PASS
+Model: tiny-gpt
+p95 decode latency: 15.63 ms
+p95 end-to-end latency: 1628.828 ms
+Peak KV cache: 218.75 MB
+Backend placement: gpu attention_prefill + cpu kv_cache_update
+```
+
+This is the path that makes the project closer to a real validation platform:
+the validation layer consumes runtime evidence from another systems repo and
+turns it into auditable reports.
 
 ## Demo: Failure, Quarantine, And Retry
 

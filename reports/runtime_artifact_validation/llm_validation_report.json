@@ -1,0 +1,18 @@
+{
+  "job_id": "runtime-artifact-validation-001",
+  "source_runtime": "heterogeneous-inference-runtime",
+  "model": "tiny-gpt",
+  "passed": true,
+  "correctness_passed": true,
+  "decode_latency_budget_ms": 20.0,
+  "e2e_latency_budget_ms": 1800.0,
+  "prefill_latency_ms": 185.464,
+  "avg_decode_latency_ms": 13.114,
+  "p95_decode_latency_ms": 15.63,
+  "p99_decode_latency_ms": 15.869,
+  "p95_latency_ms": 1628.828,
+  "p99_latency_ms": 1661.568,
+  "tokens_per_second": 76.254,
+  "peak_memory_mb": 986.75,
+  "oom_events": 0
+}

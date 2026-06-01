@@ -1,0 +1,160 @@
+{
+  "artifact": {
+    "artifact_id": "heterogeneous_runtime_backend_summary",
+    "artifact_type": "external_runtime_summary",
+    "source_repo": "heterogeneous-inference-runtime",
+    "artifact_path": "../heterogeneous-inference-runtime/results/backend_validation_summary.json",
+    "required_backends": [
+      "external_runtime"
+    ],
+    "latency_budget_ms": 5.0,
+    "correctness_required": true,
+    "scheduling": {
+      "required_labels": {
+        "runtime": "heterogeneous-inference-runtime"
+      },
+      "preferred_labels": {
+        "mode": "artifact_ingestion"
+      },
+      "resource_requests": {
+        "slots": 1
+      },
+      "preferred_devices": [
+        "heterogeneous-runtime-worker-1"
+      ],
+      "avoid_devices": [],
+      "allow_preemption": false,
+      "priority": 20
+    }
+  },
+  "validation_result": {
+    "job_id": "external-runtime-job-001",
+    "artifact_id": "heterogeneous_runtime_backend_summary",
+    "device_id": "heterogeneous-runtime-worker-1",
+    "backend": "ONNXRuntime (Optimized FP32 CUDA, CUDAExecutionProvider)",
+    "correctness_passed": true,
+    "avg_latency_ms": 2.9487,
+    "p95_latency_ms": 3.3046,
+    "p99_latency_ms": 3.7872,
+    "passed_latency_budget": true,
+    "retry_count": 0
+  },
+  "fleet_snapshot": [
+    {
+      "device_id": "heterogeneous-runtime-worker-1",
+      "backend": "external_runtime",
+      "status": "healthy",
+      "queue_depth": 0,
+      "avg_latency_ms": 2.9487,
+      "last_error": null,
+      "missed_heartbeats": 0,
+      "firmware_version": "local-python-runner",
+      "hardware_generation": "local-macos-workstation",
+      "labels": {
+        "runtime": "heterogeneous-inference-runtime",
+        "mode": "artifact_ingestion"
+      },
+      "resource_capacity": {
+        "slots": 1
+      }
+    }
+  ],
+  "event_timeline": [
+    {
+      "timestamp_ms": 1780327492837.807,
+      "event_type": "job.submitted",
+      "message": "submitted external runtime artifact for validation",
+      "job_id": "external-runtime-job-001",
+      "artifact_id": "heterogeneous_runtime_backend_summary",
+      "device_id": null,
+      "details": {
+        "artifact_id": "heterogeneous_runtime_backend_summary",
+        "artifact_type": "external_runtime_summary",
+        "source_repo": "heterogeneous-inference-runtime",
+        "artifact_path": "../heterogeneous-inference-runtime/results/backend_validation_summary.json",
+        "required_backends": [
+          "external_runtime"
+        ],
+        "latency_budget_ms": 5.0,
+        "correctness_required": true,
+        "scheduling": {
+          "required_labels": {
+            "runtime": "heterogeneous-inference-runtime"
+          },
+          "preferred_labels": {
+            "mode": "artifact_ingestion"
+          },
+          "resource_requests": {
+            "slots": 1
+          },
+          "preferred_devices": [
+            "heterogeneous-runtime-worker-1"
+          ],
+          "avoid_devices": [],
+          "allow_preemption": false,
+          "priority": 20
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1780327492837.819,
+      "event_type": "heartbeat.received",
+      "message": "external runtime worker reported healthy heartbeat",
+      "job_id": null,
+      "artifact_id": null,
+      "device_id": "heterogeneous-runtime-worker-1",
+      "details": {
+        "device_id": "heterogeneous-runtime-worker-1",
+        "backend": "external_runtime",
+        "status": "healthy",
+        "queue_depth": 0,
+        "avg_latency_ms": 2.5,
+        "last_error": null,
+        "missed_heartbeats": 0,
+        "firmware_version": "local-python-runner",
+        "hardware_generation": "local-macos-workstation",
+        "labels": {
+          "runtime": "heterogeneous-inference-runtime",
+          "mode": "artifact_ingestion"
+        },
+        "resource_capacity": {
+          "slots": 1
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1780327492837.835,
+      "event_type": "scheduler.selected_device",
+      "message": "selected heterogeneous-runtime-worker-1 for validation attempt 0",
+      "job_id": "external-runtime-job-001",
+      "artifact_id": "heterogeneous_runtime_backend_summary",
+      "device_id": "heterogeneous-runtime-worker-1",
+      "details": {
+        "backend": "external_runtime",
+        "queue_depth": 0,
+        "avg_latency_ms": 2.5,
+        "attempt": 0
+      }
+    },
+    {
+      "timestamp_ms": 1780327492838.022,
+      "event_type": "validation.passed",
+      "message": "validation passed correctness and latency budget",
+      "job_id": "external-runtime-job-001",
+      "artifact_id": "heterogeneous_runtime_backend_summary",
+      "device_id": "heterogeneous-runtime-worker-1",
+      "details": {
+        "job_id": "external-runtime-job-001",
+        "artifact_id": "heterogeneous_runtime_backend_summary",
+        "device_id": "heterogeneous-runtime-worker-1",
+        "backend": "ONNXRuntime (Optimized FP32 CUDA, CUDAExecutionProvider)",
+        "correctness_passed": true,
+        "avg_latency_ms": 2.9487,
+        "p95_latency_ms": 3.3046,
+        "p99_latency_ms": 3.7872,
+        "passed_latency_budget": true,
+        "retry_count": 0
+      }
+    }
+  ]
+}
