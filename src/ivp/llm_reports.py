@@ -177,6 +177,59 @@ def build_slo_report(
     )
 
 
+def build_plan_selection_report(job_id: str) -> dict:
+    plans = [
+        {
+            "plan_id": "plan_metal",
+            "backend": "Metal",
+            "latency_ms": 1.95,
+            "p95_latency_ms": 2.21,
+            "peak_memory_mb": 986.75,
+            "throughput_tokens_per_s": 512.8,
+        },
+        {
+            "plan_id": "plan_cpu",
+            "backend": "CPU",
+            "latency_ms": 5.1,
+            "p95_latency_ms": 5.8,
+            "peak_memory_mb": 826.75,
+            "throughput_tokens_per_s": 196.1,
+        },
+        {
+            "plan_id": "plan_hybrid",
+            "backend": "Hybrid",
+            "latency_ms": 2.7,
+            "p95_latency_ms": 3.05,
+            "peak_memory_mb": 890.75,
+            "throughput_tokens_per_s": 370.4,
+        },
+    ]
+    return {
+        "artifact_type": "plan_selection_report",
+        "job_id": job_id,
+        "selected_plan_id": "plan_metal",
+        "selection_reason": "lowest p95 latency while staying within memory budget",
+        "memory_budget_mb": 8192,
+        "plans": plans,
+        "regression_detected": False,
+    }
+
+
+def build_memory_validation_report(job_id: str) -> dict:
+    return {
+        "artifact_type": "memory_validation_report",
+        "job_id": job_id,
+        "passed": True,
+        "peak_memory_mb": 673,
+        "memory_budget_mb": 8192,
+        "budget_utilization": round(673 / 8192, 4),
+        "reuse_events": 1,
+        "allocations": 4,
+        "frees": 3,
+        "issues": [],
+    }
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -288,6 +341,8 @@ def generate_llm_demo_artifacts(
         "request_timeline_json": output_dir / "request_timeline.json",
         "scheduler_analysis_json": output_dir / "scheduler_analysis.json",
         "kv_cache_analysis_json": output_dir / "kv_cache_analysis.json",
+        "plan_selection_report_json": output_dir / "plan_selection_report.json",
+        "memory_validation_report_json": output_dir / "memory_validation_report.json",
         "llm_validation_report_md": output_dir / "llm_validation_report.md",
     }
 
@@ -304,6 +359,8 @@ def generate_llm_demo_artifacts(
     )
     write_json(paths["scheduler_analysis_json"], scheduler.model_dump())
     write_json(paths["kv_cache_analysis_json"], kv_cache.model_dump())
+    write_json(paths["plan_selection_report_json"], build_plan_selection_report(job_id))
+    write_json(paths["memory_validation_report_json"], build_memory_validation_report(job_id))
     write_llm_markdown_report(
         paths["llm_validation_report_md"],
         validation=validation,
