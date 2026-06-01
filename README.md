@@ -374,17 +374,28 @@ Built a heterogeneous inference validation platform that schedules compiler-prod
 
 ## LLM Runtime Demo Artifacts
 
-The next integration target is an LLM runtime validation demo. This project is responsible for proving that the runtime is correct, stable, and measurable.
+This repo is the validation producer for the external
+`mini-llm-serving-runtime-demo` workbench. It turns compiler/runtime outputs into
+auditable validation artifacts: correctness, latency SLOs, scheduling behavior,
+KV-cache behavior, plan selection, and memory validation.
 
-Expected outputs:
+Current demo artifact directory:
 
 ```text
-reports/llm_validation_report.json
-reports/slo_report.json
-reports/request_timeline.json
-reports/scheduler_analysis.json
-reports/kv_cache_analysis.json
-reports/llm_validation_report.md
+integration_artifacts/
+```
+
+Current outputs:
+
+```text
+integration_artifacts/llm_validation_report.json
+integration_artifacts/slo_report.json
+integration_artifacts/request_timeline.json
+integration_artifacts/scheduler_analysis.json
+integration_artifacts/kv_cache_analysis.json
+integration_artifacts/plan_selection_report.json
+integration_artifacts/memory_validation_report.json
+integration_artifacts/llm_validation_report.md
 ```
 
 ### `llm_validation_report.json`
@@ -463,11 +474,45 @@ reports/llm_validation_report.md
 
 Human-readable report for interviews and demos. It summarizes correctness, latency, memory, request scheduling, and KV-cache behavior.
 
+### `plan_selection_report.json`
+
+```json
+{
+  "selected_plan": "metal_fused",
+  "baseline_plan": "cpu_unfused",
+  "validated": true,
+  "latency_gain_percent": 22.34,
+  "memory_saved_mb": 58.5
+}
+```
+
+### `memory_validation_report.json`
+
+```json
+{
+  "passed": true,
+  "peak_memory_mb": 408.375,
+  "budget_mb": 8192,
+  "reuse_events": 3,
+  "invalid_lifetimes": 0
+}
+```
+
+The intended integration path is:
+
+```text
+compiler artifact
+  -> runtime measurements
+  -> validation reports
+  -> dashboard evidence
+```
+
+The validation layer should not invent compiler or runtime behavior. It should
+check and summarize artifacts produced by the lower layers.
+
 ## Next Extensions
 
 - Add a real ONNX Runtime worker using `heterogeneous-inference-runtime/scripts/benchmark.py`
-- Add SQLite persistence for jobs, devices, and events
-- Add a FastAPI control plane for job submission
 - Add GitHub Actions for mock hardware-in-the-loop validation
 - Add dashboard visualizations for fleet status and validation history
-- Add Kubernetes-style worker labels and scheduling constraints
+- Add real backend validation jobs that ingest `real_llama_profile.json`
