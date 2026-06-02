@@ -1,12 +1,12 @@
 {
   "source": "heterogeneous-inference-runtime/kv_cache_trace.json",
   "total_blocks": 512,
-  "peak_blocks_used": 70,
-  "block_utilization": 0.1367,
-  "fragmentation_ratio": 0.095,
-  "peak_kv_cache_mb": 218.75,
-  "avg_blocks_per_request": 30.9375,
-  "max_blocks_per_request": 70,
+  "peak_blocks_used": 278,
+  "block_utilization": 0.543,
+  "fragmentation_ratio": 0.05,
+  "peak_kv_cache_mb": 868.75,
+  "avg_blocks_per_request": 25.5625,
+  "max_blocks_per_request": 72,
   "failed_allocations": 0,
   "evictions": 0
 }

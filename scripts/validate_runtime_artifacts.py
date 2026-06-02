@@ -10,6 +10,12 @@ def load_json(path: Path):
         return json.load(f)
 
 
+def load_optional_json(path: Path, fallback):
+    if not path.exists():
+        return fallback
+    return load_json(path)
+
+
 def write_json(path: Path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -151,12 +157,58 @@ def build_backend_validation(backend_trace):
     }
 
 
+def build_runtime_decision_validation(decision_report):
+    policies = {
+        row.get("policy"): row
+        for row in decision_report.get("policies", [])
+    }
+    baseline = policies.get("fcfs_fixed_batch", {})
+    optimized = policies.get("cost_aware_memory_pressure", {})
+    improvement = decision_report.get("improvement", {})
+
+    tokens_delta = improvement.get("tokens_per_second_delta", 0.0)
+    p95_delta = improvement.get("p95_latency_ms_delta", 0.0)
+    batch_eff_delta = improvement.get("decode_batch_efficiency_delta", 0.0)
+    selected_policy = decision_report.get("selected_policy")
+    pressure_limited = optimized.get("pressure_limited_candidates", 0)
+
+    throughput_improved = tokens_delta > 0
+    latency_not_regressed = p95_delta <= 0
+    batching_improved = batch_eff_delta >= 0
+    selected_optimized = selected_policy == "cost_aware_memory_pressure"
+    pressure_policy_exercised = pressure_limited > 0
+
+    return {
+        "artifact_type": "runtime_decision_validation_report",
+        "source": "heterogeneous-inference-runtime/scheduler_decision_report.json",
+        "selected_policy": selected_policy,
+        "passed": (
+            selected_optimized
+            and throughput_improved
+            and latency_not_regressed
+            and batching_improved
+        ),
+        "baseline_policy": baseline,
+        "optimized_policy": optimized,
+        "improvement": improvement,
+        "checks": {
+            "selected_optimized": selected_optimized,
+            "throughput_improved": throughput_improved,
+            "latency_not_regressed": latency_not_regressed,
+            "batching_improved": batching_improved,
+            "pressure_policy_exercised": pressure_policy_exercised,
+        },
+        "regression_detected": not latency_not_regressed or not throughput_improved,
+    }
+
+
 def write_markdown_report(path, payload):
     validation = payload["llm_validation_report"]
     slo = payload["slo_report"]
     scheduler = payload["scheduler_analysis"]
     kv = payload["kv_cache_analysis"]
     backend = payload["backend_validation_report"]
+    decision = payload.get("runtime_decision_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -192,6 +244,25 @@ def write_markdown_report(path, payload):
         f"- Avg decode batch size: `{scheduler['avg_decode_batch_size']}`",
         f"- p95 queue wait: `{scheduler['p95_queue_wait_ms']}` ms",
         "",
+    ]
+
+    if decision:
+        improvement = decision.get("improvement", {})
+        optimized = decision.get("optimized_policy", {})
+        lines.extend([
+            "## Runtime Decision Validation",
+            "",
+            f"- Selected policy: `{decision['selected_policy']}`",
+            f"- Decision validation passed: `{decision['passed']}`",
+            f"- Tokens/sec delta: `{improvement.get('tokens_per_second_delta')}`",
+            f"- p95 latency delta: `{improvement.get('p95_latency_ms_delta')}` ms",
+            f"- Decode batch efficiency delta: `{improvement.get('decode_batch_efficiency_delta')}`",
+            f"- Pressure-limited candidates: `{optimized.get('pressure_limited_candidates', 0)}`",
+            f"- Regression detected: `{decision['regression_detected']}`",
+            "",
+        ])
+
+    lines.extend([
         "## Backend Placement",
         "",
         f"- Heterogeneous execution detected: `{backend['heterogeneous_execution_detected']}`",
@@ -202,7 +273,7 @@ def write_markdown_report(path, payload):
         "",
         "This report validates runtime artifacts produced by `heterogeneous-inference-runtime` rather than only simulating worker behavior inside the validation platform.",
         "",
-    ]
+    ])
 
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -231,11 +302,20 @@ def main():
     backend_trace = load_json(runtime_dir / "backend_trace.json")
     runtime_profile = load_json(runtime_dir / "runtime_profile.json")
     serving_trace = load_json(runtime_dir / "serving_trace.json")
+    scheduler_decision_report = load_optional_json(
+        runtime_dir / "scheduler_decision_report.json",
+        {},
+    )
 
     request_timeline = build_request_timeline(serving_trace)
     scheduler_analysis = build_scheduler_analysis(scheduler_trace, serving_trace)
     kv_cache_analysis = build_kv_cache_analysis(kv_cache_trace)
     backend_validation = build_backend_validation(backend_trace)
+    runtime_decision_validation = (
+        build_runtime_decision_validation(scheduler_decision_report)
+        if scheduler_decision_report
+        else None
+    )
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -295,6 +375,8 @@ def main():
         "request_timeline": {"requests": request_timeline},
         "runtime_profile": runtime_profile,
     }
+    if runtime_decision_validation:
+        payload["runtime_decision_validation_report"] = runtime_decision_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -306,6 +388,8 @@ def main():
         "request_timeline.json": {"requests": request_timeline},
         "runtime_profile_imported.json": runtime_profile,
     }
+    if runtime_decision_validation:
+        files["runtime_decision_validation_report.json"] = runtime_decision_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)

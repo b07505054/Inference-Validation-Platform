@@ -273,6 +273,7 @@ reports/runtime_artifact_validation/
 ├── kv_cache_analysis.json
 ├── llm_validation_report.json
 ├── request_timeline.json
+├── runtime_decision_validation_report.json
 ├── runtime_profile_imported.json
 ├── runtime_validation_report.json
 ├── runtime_validation_report.md
@@ -290,6 +291,7 @@ This workflow checks:
 - KV-cache block utilization and fragmentation
 - OOM / admission rejection behavior
 - scheduler decode batch behavior
+- baseline-vs-optimized runtime decision behavior
 - CPU/GPU backend placement
 
 Example summary:
@@ -302,6 +304,12 @@ p95 end-to-end latency: 1628.828 ms
 Peak KV cache: 218.75 MB
 Backend placement: gpu attention_prefill + cpu kv_cache_update
 ```
+
+If the runtime artifact directory includes `scheduler_decision_report.json`, the
+validator also emits `runtime_decision_validation_report.json`. That report
+compares the baseline scheduler against the selected optimized policy, checks
+throughput improvement, p95 latency regression, decode batch efficiency, and
+whether memory-pressure policy logic was exercised.
 
 This is the path that makes the project closer to a real validation platform:
 the validation layer consumes runtime evidence from another systems repo and

@@ -1,20 +1,20 @@
 {
   "source": "heterogeneous-inference-runtime/backend_trace.json",
-  "placement_count": 64,
+  "placement_count": 10,
   "backend_counts": {
-    "gpu": 32,
-    "cpu": 32
+    "gpu": 5,
+    "cpu": 5
   },
   "op_counts": {
-    "attention_prefill": 32,
-    "kv_cache_update": 32
+    "attention_prefill": 5,
+    "kv_cache_update": 5
   },
-  "avg_placement_latency_ms": 18.9572,
-  "p95_placement_latency_ms": 75.6,
+  "avg_placement_latency_ms": 15.0947,
+  "p95_placement_latency_ms": 69.692,
   "heterogeneous_execution_detected": true,
   "summary": {
-    "gpu_ops": 32,
-    "cpu_ops": 32,
+    "gpu_ops": 5,
+    "cpu_ops": 5,
     "heterogeneous_policy": "attention on gpu, kv bookkeeping on cpu"
   }
 }

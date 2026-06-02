@@ -6,36 +6,46 @@
 
 ## Prefill / Decode
 
-- Prefill latency: `185.464` ms
-- p95 decode latency: `15.63` ms
-- Tokens/sec: `76.254`
+- Prefill latency: `38.316` ms
+- p95 decode latency: `3.244` ms
+- Tokens/sec: `1236.142`
 
 ## SLO
 
-- p95 end-to-end latency: `1628.828` ms
-- p95 queue wait: `17.87` ms
+- p95 end-to-end latency: `1716.077` ms
+- p95 queue wait: `1381.098` ms
 - OOM events: `0`
 - Admission rejection rate: `0.0`
 
 ## KV Cache
 
-- Peak blocks used: `70` / `512`
-- Block utilization: `0.1367`
-- Fragmentation ratio: `0.095`
-- Peak KV cache: `218.75` MB
+- Peak blocks used: `278` / `512`
+- Block utilization: `0.543`
+- Fragmentation ratio: `0.05`
+- Peak KV cache: `868.75` MB
 
 ## Scheduler
 
-- Policy: `prefill-first-with-batched-decode`
-- Decode batch events: `130`
-- Avg decode batch size: `1.0`
-- p95 queue wait: `17.87` ms
+- Policy: `cost_aware_memory_pressure`
+- Decode batch events: `5`
+- Avg decode batch size: `6.4`
+- p95 queue wait: `1381.098` ms
+
+## Runtime Decision Validation
+
+- Selected policy: `cost_aware_memory_pressure`
+- Decision validation passed: `True`
+- Tokens/sec delta: `938.095`
+- p95 latency delta: `-5869.755` ms
+- Decode batch efficiency delta: `0.675`
+- Pressure-limited candidates: `20`
+- Regression detected: `False`
 
 ## Backend Placement
 
 - Heterogeneous execution detected: `True`
-- Backend counts: `{'gpu': 32, 'cpu': 32}`
-- Op counts: `{'attention_prefill': 32, 'kv_cache_update': 32}`
+- Backend counts: `{'gpu': 5, 'cpu': 5}`
+- Op counts: `{'attention_prefill': 5, 'kv_cache_update': 5}`
 
 ## Validation Positioning
 

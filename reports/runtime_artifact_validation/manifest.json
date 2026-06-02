@@ -7,6 +7,7 @@
     "kv_cache_analysis.json",
     "llm_validation_report.json",
     "request_timeline.json",
+    "runtime_decision_validation_report.json",
     "runtime_profile_imported.json",
     "runtime_validation_report.json",
     "runtime_validation_report.md",
