@@ -27,6 +27,7 @@ It supports two validation modes:
 
 - Control-plane simulation for worker health, quarantine, retry, and scheduling behavior.
 - Runtime artifact validation for traces produced by `heterogeneous-inference-runtime`, including LLM prefill/decode latency, KV-cache allocation, scheduler events, backend placement, and serving traces.
+- Serving-framework validation for vLLM/SGLang-style continuous batching, Triton Server-style dynamic batching/backend routing, and TensorRT-style engine/profile selection artifacts.
 
 ## Connected Repos
 

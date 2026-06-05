@@ -1,7 +1,7 @@
 # Runtime Artifact Validation Report: runtime-artifact-validation-001
 
 **Result:** PASS
-**Source runtime:** `/Users/allen/Desktop/project/heterogeneous-inference-runtime/results/llm_runtime_artifacts`
+**Source runtime:** `/Users/allen/Documents/Codex/project/heterogeneous-inference-runtime/results/llm_runtime_artifacts`
 **Model:** `tiny-gpt`
 
 ## Prefill / Decode
@@ -40,6 +40,17 @@
 - Decode batch efficiency delta: `0.675`
 - Pressure-limited candidates: `20`
 - Regression detected: `False`
+
+## Serving Framework Targets
+
+- Selected style: `vllm_sglang_style`
+- Validation passed: `True`
+- Available styles: `['baseline_fcfs', 'tensorrt_style', 'triton_server_style', 'vllm_sglang_style']`
+- TTFT: `38.316` ms
+- TPOT p95: `3.244` ms/token
+- Throughput: `1236.142` tokens/s
+- Peak KV cache: `868.75` MB
+- Selection reason: `cost-aware policy improved tokens/sec while staying within KV memory capacity`
 
 ## Backend Placement
 

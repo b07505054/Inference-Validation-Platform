@@ -202,6 +202,48 @@ def build_runtime_decision_validation(decision_report):
     }
 
 
+def build_serving_framework_validation(serving_framework_report):
+    if not serving_framework_report:
+        return None
+
+    comparisons = serving_framework_report.get("comparisons", [])
+    styles = {row.get("framework_style") for row in comparisons}
+    metrics = serving_framework_report.get("metrics", {})
+    required_styles = {
+        "baseline_fcfs",
+        "vllm_sglang_style",
+        "triton_server_style",
+        "tensorrt_style",
+    }
+    required_metrics = {
+        "ttft_ms",
+        "tpot_p95_ms",
+        "e2e_p95_ms",
+        "throughput_tokens_per_s",
+        "peak_kv_cache_mb",
+    }
+    missing_styles = sorted(required_styles - styles)
+    missing_metrics = sorted(
+        name for name in required_metrics
+        if metrics.get(name) is None
+    )
+
+    return {
+        "artifact_type": "serving_framework_validation_report",
+        "source": "heterogeneous-inference-runtime/serving_framework_report.json",
+        "passed": not missing_styles and not missing_metrics,
+        "selected_framework_style": serving_framework_report.get("selected_framework_style"),
+        "framework_targets": serving_framework_report.get("framework_targets", []),
+        "comparison_count": len(comparisons),
+        "available_framework_styles": sorted(style for style in styles if style),
+        "missing_framework_styles": missing_styles,
+        "missing_metrics": missing_metrics,
+        "metrics": metrics,
+        "improvement": serving_framework_report.get("improvement", {}),
+        "selection_reason": serving_framework_report.get("selection_reason"),
+    }
+
+
 def write_markdown_report(path, payload):
     validation = payload["llm_validation_report"]
     slo = payload["slo_report"]
@@ -209,6 +251,7 @@ def write_markdown_report(path, payload):
     kv = payload["kv_cache_analysis"]
     backend = payload["backend_validation_report"]
     decision = payload.get("runtime_decision_validation_report")
+    framework = payload.get("serving_framework_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -262,6 +305,22 @@ def write_markdown_report(path, payload):
             "",
         ])
 
+    if framework:
+        metrics = framework.get("metrics", {})
+        lines.extend([
+            "## Serving Framework Targets",
+            "",
+            f"- Selected style: `{framework['selected_framework_style']}`",
+            f"- Validation passed: `{framework['passed']}`",
+            f"- Available styles: `{framework['available_framework_styles']}`",
+            f"- TTFT: `{metrics.get('ttft_ms')}` ms",
+            f"- TPOT p95: `{metrics.get('tpot_p95_ms')}` ms/token",
+            f"- Throughput: `{metrics.get('throughput_tokens_per_s')}` tokens/s",
+            f"- Peak KV cache: `{metrics.get('peak_kv_cache_mb')}` MB",
+            f"- Selection reason: `{framework.get('selection_reason')}`",
+            "",
+        ])
+
     lines.extend([
         "## Backend Placement",
         "",
@@ -306,6 +365,10 @@ def main():
         runtime_dir / "scheduler_decision_report.json",
         {},
     )
+    serving_framework_report = load_optional_json(
+        runtime_dir / "serving_framework_report.json",
+        {},
+    )
 
     request_timeline = build_request_timeline(serving_trace)
     scheduler_analysis = build_scheduler_analysis(scheduler_trace, serving_trace)
@@ -316,6 +379,7 @@ def main():
         if scheduler_decision_report
         else None
     )
+    serving_framework_validation = build_serving_framework_validation(serving_framework_report)
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -377,6 +441,8 @@ def main():
     }
     if runtime_decision_validation:
         payload["runtime_decision_validation_report"] = runtime_decision_validation
+    if serving_framework_validation:
+        payload["serving_framework_validation_report"] = serving_framework_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -390,6 +456,8 @@ def main():
     }
     if runtime_decision_validation:
         files["runtime_decision_validation_report.json"] = runtime_decision_validation
+    if serving_framework_validation:
+        files["serving_framework_validation_report.json"] = serving_framework_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)
