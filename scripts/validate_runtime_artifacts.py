@@ -244,6 +244,57 @@ def build_serving_framework_validation(serving_framework_report):
     }
 
 
+def build_cold_start_validation(cold_start_report):
+    if not cold_start_report:
+        return None
+
+    artifact_load = cold_start_report.get("artifact_load", {})
+    backend_init = cold_start_report.get("backend_initialization", {})
+    first_token = cold_start_report.get("first_token_warmup", {})
+    steady_state = cold_start_report.get("steady_state", {})
+    available_artifacts = [
+        name for name, row in artifact_load.items()
+        if row.get("available")
+    ]
+    required_sections = [
+        "artifact_load",
+        "backend_initialization",
+        "first_token_warmup",
+        "steady_state",
+        "initialization_reduction_plan",
+    ]
+    missing_sections = [
+        name for name in required_sections
+        if not cold_start_report.get(name)
+    ]
+    cold_ttft = first_token.get("cold_ttft_ms")
+    warm_ttft = first_token.get("warm_ttft_ms")
+    first_request_penalty = first_token.get("first_request_penalty_ms")
+
+    return {
+        "artifact_type": "cold_start_validation_report",
+        "source": "heterogeneous-inference-runtime/cold_start_report.json",
+        "passed": (
+            not missing_sections
+            and bool(available_artifacts)
+            and cold_ttft is not None
+            and warm_ttft is not None
+            and first_request_penalty is not None
+            and cold_ttft >= warm_ttft
+        ),
+        "available_artifacts": available_artifacts,
+        "missing_sections": missing_sections,
+        "cold_ttft_ms": cold_ttft,
+        "warm_ttft_ms": warm_ttft,
+        "first_request_penalty_ms": first_request_penalty,
+        "steady_state_tpot_p95_ms": steady_state.get("tpot_p95_ms"),
+        "steady_state_throughput_tokens_per_s": steady_state.get("throughput_tokens_per_s"),
+        "tensorrt_available": backend_init.get("tensorrt_available"),
+        "tensorrt_reason": backend_init.get("tensorrt_reason"),
+        "recommendation_count": len(cold_start_report.get("initialization_reduction_plan", [])),
+    }
+
+
 def write_markdown_report(path, payload):
     validation = payload["llm_validation_report"]
     slo = payload["slo_report"]
@@ -252,6 +303,7 @@ def write_markdown_report(path, payload):
     backend = payload["backend_validation_report"]
     decision = payload.get("runtime_decision_validation_report")
     framework = payload.get("serving_framework_validation_report")
+    cold_start = payload.get("cold_start_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -321,6 +373,20 @@ def write_markdown_report(path, payload):
             "",
         ])
 
+    if cold_start:
+        lines.extend([
+            "## Cold Start / Initialization",
+            "",
+            f"- Validation passed: `{cold_start['passed']}`",
+            f"- Cold TTFT: `{cold_start.get('cold_ttft_ms')}` ms",
+            f"- Warm TTFT: `{cold_start.get('warm_ttft_ms')}` ms",
+            f"- First request penalty: `{cold_start.get('first_request_penalty_ms')}` ms",
+            f"- Steady-state TPOT p95: `{cold_start.get('steady_state_tpot_p95_ms')}` ms/token",
+            f"- Available artifacts: `{cold_start.get('available_artifacts')}`",
+            f"- TensorRT available: `{cold_start.get('tensorrt_available')}`",
+            "",
+        ])
+
     lines.extend([
         "## Backend Placement",
         "",
@@ -369,6 +435,10 @@ def main():
         runtime_dir / "serving_framework_report.json",
         {},
     )
+    cold_start_report = load_optional_json(
+        runtime_dir / "cold_start_report.json",
+        {},
+    )
 
     request_timeline = build_request_timeline(serving_trace)
     scheduler_analysis = build_scheduler_analysis(scheduler_trace, serving_trace)
@@ -380,6 +450,7 @@ def main():
         else None
     )
     serving_framework_validation = build_serving_framework_validation(serving_framework_report)
+    cold_start_validation = build_cold_start_validation(cold_start_report)
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -443,6 +514,8 @@ def main():
         payload["runtime_decision_validation_report"] = runtime_decision_validation
     if serving_framework_validation:
         payload["serving_framework_validation_report"] = serving_framework_validation
+    if cold_start_validation:
+        payload["cold_start_validation_report"] = cold_start_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -458,6 +531,8 @@ def main():
         files["runtime_decision_validation_report.json"] = runtime_decision_validation
     if serving_framework_validation:
         files["serving_framework_validation_report.json"] = serving_framework_validation
+    if cold_start_validation:
+        files["cold_start_validation_report.json"] = cold_start_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)

@@ -52,6 +52,16 @@
 - Peak KV cache: `868.75` MB
 - Selection reason: `cost-aware policy improved tokens/sec while staying within KV memory capacity`
 
+## Cold Start / Initialization
+
+- Validation passed: `True`
+- Cold TTFT: `98.316` ms
+- Warm TTFT: `38.316` ms
+- First request penalty: `60.0` ms
+- Steady-state TPOT p95: `3.244` ms/token
+- Available artifacts: `['onnx_fp32', 'tensorrt_fp16_engine', 'tensorrt_int8_engine', 'executorch_xnnpack_pte']`
+- TensorRT available: `False`
+
 ## Backend Placement
 
 - Heterogeneous execution detected: `True`
