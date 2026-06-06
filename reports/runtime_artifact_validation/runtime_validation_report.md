@@ -78,9 +78,19 @@
 ## Technology Gate
 
 - Validation passed: `True`
-- Main-plan technologies: `6`
+- Main-plan technologies: `7`
 - Recorded backlog technologies: `7`
 - Invalid main-plan items: `[]`
+
+## GPU PGO-like Feedback
+
+- Validation passed: `True`
+- Input: `compiler-emitted HIR RMSNorm op plus runtime shape/workload distribution`
+- Decision: `profile-guided kernel selection among CUDA/Triton/PyTorch candidates by shape bucket`
+- Metric: `kernel p95 latency, effective bandwidth, TPOT projection, throughput projection`
+- Selected kernel: `fused_rmsnorm_cuda`
+- Representative shape: `16x4096:fp32`
+- TPOT delta: `0.061856` ms/token
 
 ## Backend Placement
 

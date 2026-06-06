@@ -365,6 +365,37 @@ def build_technology_gate_validation(audit):
     }
 
 
+def build_gpu_pgo_like_validation(report):
+    if not report:
+        return None
+
+    gate = report.get("technology_gate", {})
+    decisions = report.get("shape_decisions", [])
+    representative = report.get("representative_decision") or {}
+    impact = report.get("serving_impact") or {}
+    required_gate_fields = ["input", "decision", "metric"]
+    missing_gate_fields = [field for field in required_gate_fields if not gate.get(field)]
+
+    return {
+        "artifact_type": "gpu_pgo_like_validation_report",
+        "source": "heterogeneous-inference-runtime/results/cuda_transformer/gpu_pgo_like_rmsnorm_report.json",
+        "passed": (
+            report.get("artifact_type") == "gpu_pgo_like_kernel_selection_report"
+            and gate.get("passes_gate") is True
+            and not missing_gate_fields
+            and bool(decisions)
+            and bool(representative.get("selected_kernel"))
+            and bool(impact)
+        ),
+        "technology_gate": gate,
+        "missing_gate_fields": missing_gate_fields,
+        "shape_decision_count": len(decisions),
+        "representative_decision": representative,
+        "serving_impact": impact,
+        "remaining_work": report.get("remaining_work", []),
+    }
+
+
 def write_markdown_report(path, payload):
     validation = payload["llm_validation_report"]
     slo = payload["slo_report"]
@@ -377,6 +408,7 @@ def write_markdown_report(path, payload):
     vllm_adapter = payload.get("vllm_trace_adapter_validation_report")
     sglang_adapter = payload.get("sglang_trace_adapter_validation_report")
     technology_gate = payload.get("technology_gate_validation_report")
+    gpu_pgo_like = payload.get("gpu_pgo_like_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -490,6 +522,23 @@ def write_markdown_report(path, payload):
             "",
         ])
 
+    if gpu_pgo_like:
+        gate = gpu_pgo_like.get("technology_gate", {})
+        decision = gpu_pgo_like.get("representative_decision", {})
+        impact = gpu_pgo_like.get("serving_impact", {})
+        lines.extend([
+            "## GPU PGO-like Feedback",
+            "",
+            f"- Validation passed: `{gpu_pgo_like.get('passed')}`",
+            f"- Input: `{gate.get('input')}`",
+            f"- Decision: `{gate.get('decision')}`",
+            f"- Metric: `{gate.get('metric')}`",
+            f"- Selected kernel: `{decision.get('selected_kernel')}`",
+            f"- Representative shape: `{decision.get('shape_bucket')}`",
+            f"- TPOT delta: `{impact.get('tpot_delta_ms')}` ms/token",
+            "",
+        ])
+
     lines.extend([
         "## Backend Placement",
         "",
@@ -515,6 +564,10 @@ def main():
     parser.add_argument(
         "--output-dir",
         default="reports/runtime_artifact_validation",
+    )
+    parser.add_argument(
+        "--gpu-pgo-report",
+        default="../heterogeneous-inference-runtime/results/cuda_transformer/gpu_pgo_like_rmsnorm_report.json",
     )
     parser.add_argument("--job-id", default="runtime-artifact-validation-001")
     parser.add_argument("--decode-latency-budget-ms", type=float, default=20.0)
@@ -554,6 +607,7 @@ def main():
         runtime_dir / "technology_gate_audit.json",
         {},
     )
+    gpu_pgo_like_report = load_optional_json(Path(args.gpu_pgo_report).resolve(), {})
 
     request_timeline = build_request_timeline(serving_trace)
     scheduler_analysis = build_scheduler_analysis(scheduler_trace, serving_trace)
@@ -575,6 +629,7 @@ def main():
         "sglang_trace_adapter_report",
     )
     technology_gate_validation = build_technology_gate_validation(technology_gate_audit)
+    gpu_pgo_like_validation = build_gpu_pgo_like_validation(gpu_pgo_like_report)
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -646,6 +701,8 @@ def main():
         payload["sglang_trace_adapter_validation_report"] = sglang_trace_adapter_validation
     if technology_gate_validation:
         payload["technology_gate_validation_report"] = technology_gate_validation
+    if gpu_pgo_like_validation:
+        payload["gpu_pgo_like_validation_report"] = gpu_pgo_like_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -669,6 +726,8 @@ def main():
         files["sglang_trace_adapter_validation_report.json"] = sglang_trace_adapter_validation
     if technology_gate_validation:
         files["technology_gate_validation_report.json"] = technology_gate_validation
+    if gpu_pgo_like_validation:
+        files["gpu_pgo_like_validation_report.json"] = gpu_pgo_like_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)
