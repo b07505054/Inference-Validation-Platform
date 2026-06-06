@@ -295,6 +295,76 @@ def build_cold_start_validation(cold_start_report):
     }
 
 
+
+
+def build_trace_adapter_validation(report, expected_artifact_type):
+    if not report:
+        return None
+
+    gate = report.get("technology_gate", {})
+    runtime_decision = report.get("runtime_decision", {})
+    serving_metrics = report.get("serving_metrics", {})
+    required_gate_fields = ["input", "decision", "metric"]
+    missing_gate_fields = [
+        name for name in required_gate_fields
+        if not gate.get(name)
+    ]
+    passed = (
+        report.get("artifact_type") == expected_artifact_type
+        and gate.get("passes_gate") is True
+        and not missing_gate_fields
+        and report.get("imported_request_count", 0) > 0
+        and bool(runtime_decision)
+        and bool(serving_metrics)
+        and serving_metrics.get("throughput_tokens_per_s", 0) > 0
+    )
+
+    return {
+        "artifact_type": f"{expected_artifact_type}_validation",
+        "source": f"heterogeneous-inference-runtime/{expected_artifact_type}.json",
+        "passed": passed,
+        "integration_level": report.get("integration_level"),
+        "technology_gate": gate,
+        "missing_gate_fields": missing_gate_fields,
+        "imported_request_count": report.get("imported_request_count", 0),
+        "runtime_decision": runtime_decision,
+        "serving_metrics": serving_metrics,
+        "remaining_work": report.get("remaining_work", []),
+    }
+
+
+def build_technology_gate_validation(audit):
+    if not audit:
+        return None
+
+    main_plan = audit.get("main_plan", [])
+    remaining = audit.get("remaining_not_in_main_plan", [])
+    required_fields = ["technology", "input", "decision", "metric", "status"]
+    invalid_main_plan_items = [
+        item.get("technology", "unknown")
+        for item in main_plan
+        if any(not item.get(field) for field in required_fields)
+    ]
+    remaining_without_next_step = [
+        item.get("technology", "unknown")
+        for item in remaining
+        if not item.get("missing") or not item.get("next_step")
+    ]
+
+    return {
+        "artifact_type": "technology_gate_validation_report",
+        "source": "heterogeneous-inference-runtime/technology_gate_audit.json",
+        "passed": not invalid_main_plan_items and not remaining_without_next_step and bool(main_plan),
+        "gate_questions": audit.get("gate_questions", []),
+        "main_plan_count": len(main_plan),
+        "remaining_count": len(remaining),
+        "invalid_main_plan_items": invalid_main_plan_items,
+        "remaining_without_next_step": remaining_without_next_step,
+        "main_plan": main_plan,
+        "remaining_not_in_main_plan": remaining,
+    }
+
+
 def write_markdown_report(path, payload):
     validation = payload["llm_validation_report"]
     slo = payload["slo_report"]
@@ -304,6 +374,9 @@ def write_markdown_report(path, payload):
     decision = payload.get("runtime_decision_validation_report")
     framework = payload.get("serving_framework_validation_report")
     cold_start = payload.get("cold_start_validation_report")
+    vllm_adapter = payload.get("vllm_trace_adapter_validation_report")
+    sglang_adapter = payload.get("sglang_trace_adapter_validation_report")
+    technology_gate = payload.get("technology_gate_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -387,6 +460,36 @@ def write_markdown_report(path, payload):
             "",
         ])
 
+    if vllm_adapter or sglang_adapter:
+        lines.extend([
+            "## Framework Trace Adapters",
+            "",
+        ])
+        for label, adapter in [("vLLM", vllm_adapter), ("SGLang", sglang_adapter)]:
+            if not adapter:
+                continue
+            gate = adapter.get("technology_gate", {})
+            metrics = adapter.get("serving_metrics", {})
+            lines.extend([
+                f"- {label} validation passed: `{adapter.get('passed')}`",
+                f"  input: `{gate.get('input')}`",
+                f"  decision: `{gate.get('decision')}`",
+                f"  metric: `{gate.get('metric')}`",
+                f"  throughput: `{metrics.get('throughput_tokens_per_s')}` tokens/s",
+            ])
+        lines.append("")
+
+    if technology_gate:
+        lines.extend([
+            "## Technology Gate",
+            "",
+            f"- Validation passed: `{technology_gate.get('passed')}`",
+            f"- Main-plan technologies: `{technology_gate.get('main_plan_count')}`",
+            f"- Recorded backlog technologies: `{technology_gate.get('remaining_count')}`",
+            f"- Invalid main-plan items: `{technology_gate.get('invalid_main_plan_items')}`",
+            "",
+        ])
+
     lines.extend([
         "## Backend Placement",
         "",
@@ -439,6 +542,18 @@ def main():
         runtime_dir / "cold_start_report.json",
         {},
     )
+    vllm_trace_adapter_report = load_optional_json(
+        runtime_dir / "vllm_trace_adapter_report.json",
+        {},
+    )
+    sglang_trace_adapter_report = load_optional_json(
+        runtime_dir / "sglang_trace_adapter_report.json",
+        {},
+    )
+    technology_gate_audit = load_optional_json(
+        runtime_dir / "technology_gate_audit.json",
+        {},
+    )
 
     request_timeline = build_request_timeline(serving_trace)
     scheduler_analysis = build_scheduler_analysis(scheduler_trace, serving_trace)
@@ -451,6 +566,15 @@ def main():
     )
     serving_framework_validation = build_serving_framework_validation(serving_framework_report)
     cold_start_validation = build_cold_start_validation(cold_start_report)
+    vllm_trace_adapter_validation = build_trace_adapter_validation(
+        vllm_trace_adapter_report,
+        "vllm_trace_adapter_report",
+    )
+    sglang_trace_adapter_validation = build_trace_adapter_validation(
+        sglang_trace_adapter_report,
+        "sglang_trace_adapter_report",
+    )
+    technology_gate_validation = build_technology_gate_validation(technology_gate_audit)
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -516,6 +640,12 @@ def main():
         payload["serving_framework_validation_report"] = serving_framework_validation
     if cold_start_validation:
         payload["cold_start_validation_report"] = cold_start_validation
+    if vllm_trace_adapter_validation:
+        payload["vllm_trace_adapter_validation_report"] = vllm_trace_adapter_validation
+    if sglang_trace_adapter_validation:
+        payload["sglang_trace_adapter_validation_report"] = sglang_trace_adapter_validation
+    if technology_gate_validation:
+        payload["technology_gate_validation_report"] = technology_gate_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -533,6 +663,12 @@ def main():
         files["serving_framework_validation_report.json"] = serving_framework_validation
     if cold_start_validation:
         files["cold_start_validation_report.json"] = cold_start_validation
+    if vllm_trace_adapter_validation:
+        files["vllm_trace_adapter_validation_report.json"] = vllm_trace_adapter_validation
+    if sglang_trace_adapter_validation:
+        files["sglang_trace_adapter_validation_report.json"] = sglang_trace_adapter_validation
+    if technology_gate_validation:
+        files["technology_gate_validation_report.json"] = technology_gate_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)

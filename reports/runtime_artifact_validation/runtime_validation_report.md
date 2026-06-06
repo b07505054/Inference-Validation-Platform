@@ -62,6 +62,26 @@
 - Available artifacts: `['onnx_fp32', 'tensorrt_fp16_engine', 'tensorrt_int8_engine', 'executorch_xnnpack_pte']`
 - TensorRT available: `False`
 
+## Framework Trace Adapters
+
+- vLLM validation passed: `True`
+  input: `vllm style synthetic request/decode trace`
+  decision: `continuous batching admission and paged-KV pressure cap`
+  metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
+  throughput: `1236.142` tokens/s
+- SGLang validation passed: `True`
+  input: `sglang style synthetic request/decode trace`
+  decision: `request/decode scheduling with prefix-reuse metadata`
+  metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
+  throughput: `1236.142` tokens/s
+
+## Technology Gate
+
+- Validation passed: `True`
+- Main-plan technologies: `6`
+- Recorded backlog technologies: `7`
+- Invalid main-plan items: `[]`
+
 ## Backend Placement
 
 - Heterogeneous execution detected: `True`
