@@ -294,6 +294,10 @@ This workflow checks:
 - OOM / admission rejection behavior
 - scheduler decode batch behavior
 - baseline-vs-optimized runtime decision behavior
+- workload-aware in-flight policy selection across default and decode-heavy
+  scenarios
+- in-flight paged-KV lifecycle balance: allocated pages equal freed pages and
+  page leak count remains zero
 - vLLM-style KV page prefetch hit/waste counters and fallback guard behavior
 - distributed serving route decisions across round-robin, least-queue, and
   KV-aware policies
@@ -318,6 +322,14 @@ validator also emits `runtime_decision_validation_report.json`. That report
 compares the baseline scheduler against the selected optimized policy, checks
 throughput improvement, p95 latency regression, decode batch efficiency, and
 whether memory-pressure policy logic was exercised.
+
+The validator also emits `inflight_scheduler_validation_report.json` when
+in-flight candidate traces are present. That report checks that at least one
+scenario keeps the incumbent policy, at least one scenario selects
+`inflight_paged_kv_continuous_batching`, every scenario has balanced paged-KV
+lifecycle counters, and any in-flight win has no OOM or reject regression. This
+validates TensorRT-LLM-aligned local scheduler concepts without claiming
+TensorRT-LLM internals were modified.
 
 If the runtime artifact directory includes `page_prefetch_report.json`, the
 validator emits `page_prefetch_validation_report.json`. That report checks the

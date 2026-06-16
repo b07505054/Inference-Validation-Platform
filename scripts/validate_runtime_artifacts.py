@@ -272,6 +272,32 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
         invariant_passes(value)
         for value in invariants.values()
     )
+    scenario_results = decision_report.get("scenario_results", []) if decision_report else []
+    fallback_scenarios = [
+        row for row in scenario_results
+        if row.get("decision", {}).get("selected_policy") != "inflight_paged_kv_continuous_batching"
+    ]
+    inflight_win_scenarios = [
+        row for row in scenario_results
+        if row.get("decision", {}).get("selected_policy") == "inflight_paged_kv_continuous_batching"
+    ]
+    scenario_page_lifecycle_balanced = all(
+        row.get("page_lifecycle", {}).get("inflight_candidate", {}).get("page_leak_count") == 0
+        and row.get("page_lifecycle", {}).get("inflight_candidate", {}).get("allocated_pages")
+        == row.get("page_lifecycle", {}).get("inflight_candidate", {}).get("freed_pages")
+        for row in scenario_results
+    )
+    inflight_win_has_no_reject_or_oom_regression = all(
+        row.get("checks", {}).get("oom_count_not_regressed") is True
+        and row.get("checks", {}).get("reject_count_not_regressed") is True
+        for row in inflight_win_scenarios
+    )
+    workload_aware_selection_valid = (
+        bool(fallback_scenarios)
+        and bool(inflight_win_scenarios)
+        and scenario_page_lifecycle_balanced
+        and inflight_win_has_no_reject_or_oom_regression
+    )
 
     return {
         "artifact_type": "inflight_scheduler_validation_report",
@@ -285,6 +311,7 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
             and page_lifecycle_balanced
             and hard_limit_behavior
             and gate_consistent
+            and workload_aware_selection_valid
         ),
         "policy": "inflight_paged_kv_continuous_batching",
         "positioning": inflight.get("positioning"),
@@ -301,7 +328,12 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
             "page_lifecycle_balanced": page_lifecycle_balanced,
             "hard_limit_forbids_prefill": hard_limit_behavior,
             "policy_gate_selection_consistent": gate_consistent,
+            "at_least_one_scenario_retains_incumbent": bool(fallback_scenarios),
+            "at_least_one_scenario_selects_inflight": bool(inflight_win_scenarios),
+            "all_scenario_page_lifecycles_balanced": scenario_page_lifecycle_balanced,
+            "inflight_win_has_no_reject_or_oom_regression": inflight_win_has_no_reject_or_oom_regression,
         },
+        "scenario_results": scenario_results,
         "metrics": {
             "ttft_ms": lifecycle.get("ttft_ms", {}),
             "tpot_ms": lifecycle.get("tpot_ms", {}),
@@ -321,6 +353,7 @@ def build_serving_framework_validation(serving_framework_report):
         return None
 
     comparisons = serving_framework_report.get("comparisons", [])
+    workload_selection = serving_framework_report.get("workload_aware_policy_selection", [])
     styles = {row.get("framework_style") for row in comparisons}
     metrics = serving_framework_report.get("metrics", {})
     required_styles = {
@@ -343,11 +376,25 @@ def build_serving_framework_validation(serving_framework_report):
         name for name in required_metrics
         if metrics.get(name) is None
     )
+    workload_selection_has_both_outcomes = (
+        any(
+            row.get("selected_policy") == "inflight_paged_kv_continuous_batching"
+            for row in workload_selection
+        )
+        and any(
+            row.get("selected_policy") != "inflight_paged_kv_continuous_batching"
+            for row in workload_selection
+        )
+    )
 
     return {
         "artifact_type": "serving_framework_validation_report",
         "source": "heterogeneous-inference-runtime/serving_framework_report.json",
-        "passed": not missing_styles and not missing_metrics,
+        "passed": (
+            not missing_styles
+            and not missing_metrics
+            and workload_selection_has_both_outcomes
+        ),
         "selected_framework_style": serving_framework_report.get("selected_framework_style"),
         "framework_targets": serving_framework_report.get("framework_targets", []),
         "comparison_count": len(comparisons),
@@ -355,6 +402,8 @@ def build_serving_framework_validation(serving_framework_report):
         "missing_framework_styles": missing_styles,
         "missing_metrics": missing_metrics,
         "metrics": metrics,
+        "workload_aware_policy_selection": workload_selection,
+        "workload_selection_has_both_outcomes": workload_selection_has_both_outcomes,
         "improvement": serving_framework_report.get("improvement", {}),
         "selection_reason": serving_framework_report.get("selection_reason"),
     }
