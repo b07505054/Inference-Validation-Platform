@@ -7,13 +7,13 @@
 ## Prefill / Decode
 
 - Prefill latency: `38.316` ms
-- p95 decode latency: `2.511` ms
-- Tokens/sec: `1470.548`
+- p95 decode latency: `3.244` ms
+- Tokens/sec: `1236.142`
 
 ## SLO
 
-- p95 end-to-end latency: `1406.597` ms
-- p95 queue wait: `1128.618` ms
+- p95 end-to-end latency: `1716.077` ms
+- p95 queue wait: `1381.098` ms
 - OOM events: `0`
 - Admission rejection rate: `0.0`
 
@@ -26,43 +26,31 @@
 
 ## Scheduler
 
-- Policy: `cost_aware_memory_pressure_page_prefetch`
+- Policy: `cost_aware_memory_pressure`
 - Decode batch events: `5`
 - Avg decode batch size: `6.4`
-- p95 queue wait: `1128.618` ms
+- p95 queue wait: `1381.098` ms
 
 ## Runtime Decision Validation
 
-- Selected policy: `cost_aware_memory_pressure_page_prefetch`
+- Selected policy: `cost_aware_memory_pressure`
 - Decision validation passed: `True`
-- Tokens/sec delta: `1172.501`
-- p95 latency delta: `-6179.235` ms
+- Tokens/sec delta: `938.095`
+- p95 latency delta: `-5869.755` ms
 - Decode batch efficiency delta: `0.675`
 - Pressure-limited candidates: `20`
 - Regression detected: `False`
-
-## In-Flight Paged KV Scheduler
-
-- Validation passed: `True`
-- Selected policy: `cost_aware_memory_pressure_page_prefetch`
-- Gate passed: `False`
-- Lifecycle complete: `True`
-- Page lifecycle balanced: `True`
-- Hard-limit behavior: `True`
-- TTFT p95: `2501.243` ms
-- TPOT p95: `3.137` ms
-- Page hit rate: `0.8654`
 
 ## Serving Framework Targets
 
 - Selected style: `vllm_sglang_style`
 - Validation passed: `True`
-- Available styles: `['baseline_fcfs', 'tensorrt_llm_aligned_local_runtime_policy', 'tensorrt_style', 'triton_server_style', 'vllm_sglang_style', 'vllm_style_page_prefetch']`
+- Available styles: `['baseline_fcfs', 'tensorrt_style', 'triton_server_style', 'vllm_sglang_style']`
 - TTFT: `38.316` ms
-- TPOT p95: `2.511` ms/token
-- Throughput: `1470.548` tokens/s
+- TPOT p95: `3.244` ms/token
+- Throughput: `1236.142` tokens/s
 - Peak KV cache: `868.75` MB
-- Selection reason: `page prefetch candidate improved TPOT/e2e/throughput without KV regression`
+- Selection reason: `cost-aware policy improved tokens/sec while staying within KV memory capacity`
 
 ## Cold Start / Initialization
 
@@ -70,7 +58,7 @@
 - Cold TTFT: `98.316` ms
 - Warm TTFT: `38.316` ms
 - First request penalty: `60.0` ms
-- Steady-state TPOT p95: `2.511` ms/token
+- Steady-state TPOT p95: `3.244` ms/token
 - Available artifacts: `['onnx_fp32', 'tensorrt_fp16_engine', 'tensorrt_int8_engine', 'executorch_xnnpack_pte']`
 - TensorRT available: `False`
 
@@ -80,61 +68,19 @@
   input: `vllm style synthetic request/decode trace`
   decision: `continuous batching admission and paged-KV pressure cap`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1470.548` tokens/s
+  throughput: `1236.142` tokens/s
 - SGLang validation passed: `True`
   input: `sglang style synthetic request/decode trace`
   decision: `request/decode scheduling with prefix-reuse metadata`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1470.548` tokens/s
+  throughput: `1236.142` tokens/s
 
 ## Technology Gate
 
 - Validation passed: `True`
-- Main-plan technologies: `12`
+- Main-plan technologies: `7`
 - Recorded backlog technologies: `7`
 - Invalid main-plan items: `[]`
-
-## vLLM-Style Page Prefetch
-
-- Validation passed: `True`
-- Input: `vLLM-style request/decode trace plus allocated KV block map and pending decode candidates`
-- Decision: `prefetch next decode KV pages only when memory pressure is below the prefetch budget`
-- Metric: `prefetch hit rate, wasted prefetch blocks, TPOT p95, decode p95, throughput, queue wait, OOM/rejection rate`
-- Selected policy: `cost_aware_memory_pressure_page_prefetch`
-- Hit rate: `0.8808`
-- TPOT p95 delta: `-0.7331` ms/token
-- Tokens/sec delta: `234.406`
-
-## Distributed Serving
-
-- Validation passed: `True`
-- Selected policy: `least_queue`
-- Cache-aware check: `True`
-- Selection reason: `least-queue retained because KV-aware routing regressed TPOT or throughput`
-
-## Load Balancing
-
-- Validation passed: `True`
-- Selected policy: `least_queue`
-- Cache hit delta: `0.2188`
-- TPOT p95 delta: `1.423` ms/token
-- Throughput delta: `-141.8577` tokens/s
-
-## Worker Health / Failover
-
-- Validation passed: `True`
-- Retry count: `1`
-- Failover count: `1`
-- Quarantine count: `1`
-- Failed requests: `0`
-- TTFT p95 regression: `-100.9461` ms
-
-## Protobuf Contract
-
-- Validation passed: `True`
-- Service defined: `True`
-- Stub generation: `skipped_tool_not_installed`
-- Claim boundary: `protobuf contract only; no production gRPC deployment is claimed`
 
 ## GPU PGO-like Feedback
 

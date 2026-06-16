@@ -122,6 +122,13 @@ def build_kv_cache_analysis(kv_cache_trace):
         for request in requests
     ]
 
+    page_lifecycle = kv_cache_trace.get("page_lifecycle", {})
+    candidate_page_lifecycle = kv_cache_trace.get("candidate_page_lifecycle", {})
+    inflight_page_lifecycle = candidate_page_lifecycle.get(
+        "inflight_paged_kv_continuous_batching",
+        {},
+    )
+
     return {
         "source": "heterogeneous-inference-runtime/kv_cache_trace.json",
         "total_blocks": total_blocks,
@@ -136,6 +143,11 @@ def build_kv_cache_analysis(kv_cache_trace):
         "max_blocks_per_request": max(allocated_per_request) if allocated_per_request else 0,
         "failed_allocations": 0,
         "evictions": 0,
+        "page_lifecycle": page_lifecycle,
+        "candidate_page_lifecycle": candidate_page_lifecycle,
+        "inflight_page_leak_count": inflight_page_lifecycle.get("page_leak_count"),
+        "inflight_pages_allocated": inflight_page_lifecycle.get("allocated_pages"),
+        "inflight_pages_freed": inflight_page_lifecycle.get("freed_pages"),
     }
 
 
@@ -164,6 +176,7 @@ def build_runtime_decision_validation(decision_report):
     }
     baseline = policies.get("fcfs_fixed_batch", {})
     optimized = policies.get("cost_aware_memory_pressure", {})
+    page_prefetch = policies.get("cost_aware_memory_pressure_page_prefetch", {})
     improvement = decision_report.get("improvement", {})
 
     tokens_delta = improvement.get("tokens_per_second_delta", 0.0)
@@ -175,8 +188,17 @@ def build_runtime_decision_validation(decision_report):
     throughput_improved = tokens_delta > 0
     latency_not_regressed = p95_delta <= 0
     batching_improved = batch_eff_delta >= 0
-    selected_optimized = selected_policy == "cost_aware_memory_pressure"
-    pressure_policy_exercised = pressure_limited > 0
+    optimized_family = {
+        "cost_aware_memory_pressure",
+        "cost_aware_memory_pressure_page_prefetch",
+    }
+    selected_optimized = selected_policy in optimized_family
+    selected_policy_row = policies.get(selected_policy, optimized)
+    pressure_policy_exercised = (
+        pressure_limited > 0
+        or selected_policy_row.get("pressure_limited_candidates", 0) > 0
+        or bool(page_prefetch.get("page_prefetch", {}).get("attempts", 0))
+    )
 
     return {
         "artifact_type": "runtime_decision_validation_report",
@@ -190,6 +212,7 @@ def build_runtime_decision_validation(decision_report):
         ),
         "baseline_policy": baseline,
         "optimized_policy": optimized,
+        "page_prefetch_policy": page_prefetch,
         "improvement": improvement,
         "checks": {
             "selected_optimized": selected_optimized,
@@ -199,6 +222,97 @@ def build_runtime_decision_validation(decision_report):
             "pressure_policy_exercised": pressure_policy_exercised,
         },
         "regression_detected": not latency_not_regressed or not throughput_improved,
+    }
+
+
+def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decision_report):
+    candidates = scheduler_trace.get("candidate_traces", {})
+    inflight = candidates.get("inflight_paged_kv_continuous_batching", {})
+    lifecycle = inflight.get("lifecycle", {})
+    page_lifecycle = (
+        kv_cache_trace.get("candidate_page_lifecycle", {})
+        .get("inflight_paged_kv_continuous_batching", {})
+    )
+    steps = inflight.get("steps", [])
+    gate = decision_report.get("inflight_paged_kv_candidate", {}) if decision_report else {}
+    selected_policy = decision_report.get("selected_policy") if decision_report else None
+    invariants = lifecycle.get("invariants", {})
+    config = lifecycle.get("config", {})
+    hard_limit = config.get("memory_pressure_hard_limit", 1.0)
+    request_states = lifecycle.get("request_states", [])
+
+    def invariant_passes(value):
+        if isinstance(value, bool):
+            return value
+        return value == 0
+
+    lifecycle_complete = bool(request_states) and all(
+        row.get("state") in {"finished", "rejected"}
+        for row in request_states
+    )
+    hard_limit_behavior = all(
+        not step.get("prefill_request_ids")
+        for step in steps
+        if step.get("memory_pressure_before", 0.0) >= hard_limit
+    )
+    gate_consistent = (
+        (selected_policy == "inflight_paged_kv_continuous_batching")
+        == bool(gate.get("passes_gate"))
+    )
+    page_lifecycle_balanced = (
+        page_lifecycle.get("page_leak_count") == 0
+        and page_lifecycle.get("allocated_pages") == page_lifecycle.get("freed_pages")
+    )
+    scheduler_tick_present = any(step.get("event") == "scheduler_tick" for step in steps)
+    mixed_or_decode_present = any(
+        step.get("selected_action") in {"mixed_step", "decode_batch", "drain_decode"}
+        for step in steps
+    )
+    invariant_checks_pass = bool(invariants) and all(
+        invariant_passes(value)
+        for value in invariants.values()
+    )
+
+    return {
+        "artifact_type": "inflight_scheduler_validation_report",
+        "source": "heterogeneous-inference-runtime/scheduler_trace.json",
+        "passed": (
+            bool(inflight)
+            and scheduler_tick_present
+            and mixed_or_decode_present
+            and lifecycle_complete
+            and invariant_checks_pass
+            and page_lifecycle_balanced
+            and hard_limit_behavior
+            and gate_consistent
+        ),
+        "policy": "inflight_paged_kv_continuous_batching",
+        "positioning": inflight.get("positioning"),
+        "selected_policy": selected_policy,
+        "gate": gate,
+        "lifecycle_invariants": invariants,
+        "page_lifecycle": page_lifecycle,
+        "checks": {
+            "inflight_candidate_trace_exists": bool(inflight),
+            "scheduler_tick_present": scheduler_tick_present,
+            "mixed_or_decode_present": mixed_or_decode_present,
+            "lifecycle_complete": lifecycle_complete,
+            "invariant_checks_pass": invariant_checks_pass,
+            "page_lifecycle_balanced": page_lifecycle_balanced,
+            "hard_limit_forbids_prefill": hard_limit_behavior,
+            "policy_gate_selection_consistent": gate_consistent,
+        },
+        "metrics": {
+            "ttft_ms": lifecycle.get("ttft_ms", {}),
+            "tpot_ms": lifecycle.get("tpot_ms", {}),
+            "pressure_limited_ticks": lifecycle.get("pressure_limited_ticks"),
+            "prefill_chunk_count": lifecycle.get("prefill_chunk_count"),
+            "avg_decode_batch_size": inflight.get("avg_decode_batch_size"),
+            "decode_batch_efficiency": inflight.get("decode_batch_efficiency"),
+            "page_hit_rate": page_lifecycle.get("prefetch_hit_rate"),
+            "pages_allocated": page_lifecycle.get("allocated_pages"),
+            "pages_freed": page_lifecycle.get("freed_pages"),
+        },
     }
 
 
@@ -212,6 +326,8 @@ def build_serving_framework_validation(serving_framework_report):
     required_styles = {
         "baseline_fcfs",
         "vllm_sglang_style",
+        "vllm_style_page_prefetch",
+        "tensorrt_llm_aligned_local_runtime_policy",
         "triton_server_style",
         "tensorrt_style",
     }
@@ -241,6 +357,202 @@ def build_serving_framework_validation(serving_framework_report):
         "metrics": metrics,
         "improvement": serving_framework_report.get("improvement", {}),
         "selection_reason": serving_framework_report.get("selection_reason"),
+    }
+
+
+def build_page_prefetch_validation(report):
+    if not report:
+        return None
+
+    gate = report.get("technology_gate", {})
+    metric = report.get("metric", {})
+    required_gate_fields = ["input", "decision", "metric"]
+    missing_gate_fields = [
+        field for field in required_gate_fields
+        if not gate.get(field)
+    ]
+    selected = report.get("selected_policy")
+    candidate = report.get("candidate_policy")
+    fallback = report.get("fallback_policy")
+    counters_valid = (
+        metric.get("prefetch_attempts", 0) >= 0
+        and metric.get("prefetch_hits", 0) >= 0
+        and metric.get("prefetch_misses", 0) >= 0
+        and 0.0 <= metric.get("prefetch_hit_rate", 0.0) <= 1.0
+    )
+    no_oom_regression = metric.get("oom_events", 1) == 0
+    selected_valid = selected in {candidate, fallback}
+    fallback_guard_present = bool(report.get("selection_reason")) and bool(report.get("decision", {}).get("fallback_guard"))
+
+    return {
+        "artifact_type": "page_prefetch_validation_report",
+        "source": "heterogeneous-inference-runtime/page_prefetch_report.json",
+        "passed": (
+            report.get("artifact_type") == "vllm_style_page_prefetch_report"
+            and gate.get("passes_gate") is True
+            and not missing_gate_fields
+            and counters_valid
+            and no_oom_regression
+            and selected_valid
+            and fallback_guard_present
+        ),
+        "integration_level": report.get("integration_level"),
+        "technology_gate": gate,
+        "missing_gate_fields": missing_gate_fields,
+        "selected_policy": selected,
+        "candidate_policy": candidate,
+        "fallback_policy": fallback,
+        "selection_reason": report.get("selection_reason"),
+        "metric": metric,
+        "checks": {
+            "counters_valid": counters_valid,
+            "no_oom_regression": no_oom_regression,
+            "selected_policy_valid": selected_valid,
+            "fallback_guard_present": fallback_guard_present,
+        },
+        "remaining_work": report.get("remaining_work", []),
+    }
+
+
+def build_distributed_serving_validation(report):
+    if not report:
+        return None
+
+    gate = report.get("technology_gate", {})
+    summaries = report.get("policy_summaries", {})
+    required = {"round_robin", "least_queue", "kv_aware"}
+    missing = sorted(required - set(summaries))
+    kv = summaries.get("kv_aware", {})
+    least = summaries.get("least_queue", {})
+    selected = report.get("selected_policy")
+    selected_valid = selected in {"kv_aware", "least_queue"}
+    cache_gate = kv.get("cache_hit_rate", 0.0) >= least.get("cache_hit_rate", 0.0)
+    metrics_present = all(
+        summaries.get(policy, {}).get(field) is not None
+        for policy in required
+        for field in ["ttft_p95_ms", "tpot_p95_ms", "throughput_tokens_per_s", "cache_hit_rate"]
+    )
+
+    return {
+        "artifact_type": "distributed_serving_validation_report",
+        "source": "heterogeneous-inference-runtime/distributed_serving_report.json",
+        "passed": (
+            report.get("artifact_type") == "distributed_serving_report"
+            and gate.get("passes_gate") is True
+            and not missing
+            and selected_valid
+            and metrics_present
+        ),
+        "technology_gate": gate,
+        "selected_policy": selected,
+        "selection_reason": report.get("selection_reason"),
+        "missing_policies": missing,
+        "policy_summaries": summaries,
+        "checks": {
+            "selected_policy_valid": selected_valid,
+            "metrics_present": metrics_present,
+            "kv_cache_hit_rate_not_worse_than_least_queue": cache_gate,
+        },
+    }
+
+
+def build_load_balancing_validation(report):
+    if not report:
+        return None
+
+    policies = {
+        row.get("policy"): row
+        for row in report.get("policies", [])
+    }
+    comparisons = report.get("comparisons", {}).get("kv_aware_vs_least_queue", {})
+    required = {"round_robin", "least_queue", "kv_aware"}
+    return {
+        "artifact_type": "load_balancing_validation_report",
+        "source": "heterogeneous-inference-runtime/load_balancing_report.json",
+        "passed": (
+            report.get("artifact_type") == "load_balancing_report"
+            and required.issubset(set(policies))
+            and report.get("selected_policy") in {"kv_aware", "least_queue"}
+            and comparisons.get("cache_hit_rate_delta") is not None
+            and comparisons.get("tpot_p95_delta_ms") is not None
+            and comparisons.get("throughput_delta_tokens_per_s") is not None
+        ),
+        "selected_policy": report.get("selected_policy"),
+        "selection_reason": report.get("selection_reason"),
+        "policy_count": len(policies),
+        "comparisons": comparisons,
+        "policies": policies,
+    }
+
+
+def build_fault_tolerance_validation(report, health_report):
+    if not report:
+        return None
+
+    metrics = report.get("metrics", {})
+    health = report.get("worker_health", {})
+    events = health_report.get("events", []) if health_report else []
+    timeout_seen = any(event.get("event") == "worker_timeout" for event in events)
+    failover_seen = any(event.get("event") == "request_failover" for event in events)
+    quarantined_worker_seen = any(
+        row.get("quarantined")
+        for row in (health_report or {}).get("final_worker_state", [])
+    )
+
+    return {
+        "artifact_type": "fault_tolerance_validation_report",
+        "source": "heterogeneous-inference-runtime/fault_tolerance_report.json",
+        "passed": (
+            report.get("artifact_type") == "fault_tolerance_report"
+            and report.get("passed") is True
+            and metrics.get("failed_requests", 1) == 0
+            and metrics.get("retry_count", 0) > 0
+            and metrics.get("failover_count", 0) > 0
+            and metrics.get("quarantine_count", 0) > 0
+            and timeout_seen
+            and failover_seen
+            and quarantined_worker_seen
+        ),
+        "technology_gate": report.get("technology_gate", {}),
+        "worker_health": health,
+        "metrics": metrics,
+        "latency_regression": report.get("latency_regression", {}),
+        "checks": {
+            "timeout_seen": timeout_seen,
+            "failover_seen": failover_seen,
+            "quarantined_worker_seen": quarantined_worker_seen,
+            "no_request_loss": metrics.get("failed_requests", 1) == 0,
+        },
+    }
+
+
+def build_grpc_contract_validation(report):
+    if not report:
+        return None
+
+    schema = report.get("schema_messages", {})
+    required = [
+        "GenerateRequest",
+        "GenerateResponse",
+        "WorkerHealth",
+        "RouteDecision",
+        "KVShardMetadata",
+    ]
+    missing = [name for name in required if not schema.get(name)]
+    return {
+        "artifact_type": "grpc_contract_validation_report",
+        "source": "heterogeneous-inference-runtime/grpc_contract_report.json",
+        "passed": (
+            report.get("artifact_type") == "grpc_contract_report"
+            and not missing
+            and report.get("service_defined") is True
+        ),
+        "technology_gate": report.get("technology_gate", {}),
+        "schema_messages": schema,
+        "missing_messages": missing,
+        "service_defined": report.get("service_defined"),
+        "stub_generation": report.get("stub_generation"),
+        "claim_boundary": report.get("claim_boundary"),
     }
 
 
@@ -403,12 +715,18 @@ def write_markdown_report(path, payload):
     kv = payload["kv_cache_analysis"]
     backend = payload["backend_validation_report"]
     decision = payload.get("runtime_decision_validation_report")
+    inflight = payload.get("inflight_scheduler_validation_report")
     framework = payload.get("serving_framework_validation_report")
     cold_start = payload.get("cold_start_validation_report")
     vllm_adapter = payload.get("vllm_trace_adapter_validation_report")
     sglang_adapter = payload.get("sglang_trace_adapter_validation_report")
     technology_gate = payload.get("technology_gate_validation_report")
     gpu_pgo_like = payload.get("gpu_pgo_like_validation_report")
+    page_prefetch = payload.get("page_prefetch_validation_report")
+    distributed = payload.get("distributed_serving_validation_report")
+    load_balancing = payload.get("load_balancing_validation_report")
+    fault_tolerance = payload.get("fault_tolerance_validation_report")
+    grpc_contract = payload.get("grpc_contract_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -459,6 +777,24 @@ def write_markdown_report(path, payload):
             f"- Decode batch efficiency delta: `{improvement.get('decode_batch_efficiency_delta')}`",
             f"- Pressure-limited candidates: `{optimized.get('pressure_limited_candidates', 0)}`",
             f"- Regression detected: `{decision['regression_detected']}`",
+            "",
+        ])
+
+    if inflight:
+        checks = inflight.get("checks", {})
+        metrics = inflight.get("metrics", {})
+        lines.extend([
+            "## In-Flight Paged KV Scheduler",
+            "",
+            f"- Validation passed: `{inflight.get('passed')}`",
+            f"- Selected policy: `{inflight.get('selected_policy')}`",
+            f"- Gate passed: `{inflight.get('gate', {}).get('passes_gate')}`",
+            f"- Lifecycle complete: `{checks.get('lifecycle_complete')}`",
+            f"- Page lifecycle balanced: `{checks.get('page_lifecycle_balanced')}`",
+            f"- Hard-limit behavior: `{checks.get('hard_limit_forbids_prefill')}`",
+            f"- TTFT p95: `{metrics.get('ttft_ms', {}).get('p95')}` ms",
+            f"- TPOT p95: `{metrics.get('tpot_ms', {}).get('p95')}` ms",
+            f"- Page hit rate: `{metrics.get('page_hit_rate')}`",
             "",
         ])
 
@@ -519,6 +855,74 @@ def write_markdown_report(path, payload):
             f"- Main-plan technologies: `{technology_gate.get('main_plan_count')}`",
             f"- Recorded backlog technologies: `{technology_gate.get('remaining_count')}`",
             f"- Invalid main-plan items: `{technology_gate.get('invalid_main_plan_items')}`",
+            "",
+        ])
+
+    if page_prefetch:
+        metric = page_prefetch.get("metric", {})
+        gate = page_prefetch.get("technology_gate", {})
+        lines.extend([
+            "## vLLM-Style Page Prefetch",
+            "",
+            f"- Validation passed: `{page_prefetch.get('passed')}`",
+            f"- Input: `{gate.get('input')}`",
+            f"- Decision: `{gate.get('decision')}`",
+            f"- Metric: `{gate.get('metric')}`",
+            f"- Selected policy: `{page_prefetch.get('selected_policy')}`",
+            f"- Hit rate: `{metric.get('prefetch_hit_rate')}`",
+            f"- TPOT p95 delta: `{metric.get('tpot_p95_delta_ms')}` ms/token",
+            f"- Tokens/sec delta: `{metric.get('tokens_per_second_delta')}`",
+            "",
+        ])
+
+    if distributed:
+        checks = distributed.get("checks", {})
+        lines.extend([
+            "## Distributed Serving",
+            "",
+            f"- Validation passed: `{distributed.get('passed')}`",
+            f"- Selected policy: `{distributed.get('selected_policy')}`",
+            f"- Cache-aware check: `{checks.get('kv_cache_hit_rate_not_worse_than_least_queue')}`",
+            f"- Selection reason: `{distributed.get('selection_reason')}`",
+            "",
+        ])
+
+    if load_balancing:
+        comp = load_balancing.get("comparisons", {})
+        lines.extend([
+            "## Load Balancing",
+            "",
+            f"- Validation passed: `{load_balancing.get('passed')}`",
+            f"- Selected policy: `{load_balancing.get('selected_policy')}`",
+            f"- Cache hit delta: `{comp.get('cache_hit_rate_delta')}`",
+            f"- TPOT p95 delta: `{comp.get('tpot_p95_delta_ms')}` ms/token",
+            f"- Throughput delta: `{comp.get('throughput_delta_tokens_per_s')}` tokens/s",
+            "",
+        ])
+
+    if fault_tolerance:
+        metrics = fault_tolerance.get("metrics", {})
+        reg = fault_tolerance.get("latency_regression", {})
+        lines.extend([
+            "## Worker Health / Failover",
+            "",
+            f"- Validation passed: `{fault_tolerance.get('passed')}`",
+            f"- Retry count: `{metrics.get('retry_count')}`",
+            f"- Failover count: `{metrics.get('failover_count')}`",
+            f"- Quarantine count: `{metrics.get('quarantine_count')}`",
+            f"- Failed requests: `{metrics.get('failed_requests')}`",
+            f"- TTFT p95 regression: `{reg.get('ttft_p95_delta_ms')}` ms",
+            "",
+        ])
+
+    if grpc_contract:
+        lines.extend([
+            "## Protobuf Contract",
+            "",
+            f"- Validation passed: `{grpc_contract.get('passed')}`",
+            f"- Service defined: `{grpc_contract.get('service_defined')}`",
+            f"- Stub generation: `{grpc_contract.get('stub_generation')}`",
+            f"- Claim boundary: `{grpc_contract.get('claim_boundary')}`",
             "",
         ])
 
@@ -607,6 +1011,30 @@ def main():
         runtime_dir / "technology_gate_audit.json",
         {},
     )
+    page_prefetch_report = load_optional_json(
+        runtime_dir / "page_prefetch_report.json",
+        {},
+    )
+    distributed_serving_report = load_optional_json(
+        runtime_dir / "distributed_serving_report.json",
+        {},
+    )
+    load_balancing_report = load_optional_json(
+        runtime_dir / "load_balancing_report.json",
+        {},
+    )
+    worker_health_report = load_optional_json(
+        runtime_dir / "worker_health_report.json",
+        {},
+    )
+    fault_tolerance_report = load_optional_json(
+        runtime_dir / "fault_tolerance_report.json",
+        {},
+    )
+    grpc_contract_report = load_optional_json(
+        runtime_dir / "grpc_contract_report.json",
+        {},
+    )
     gpu_pgo_like_report = load_optional_json(Path(args.gpu_pgo_report).resolve(), {})
 
     request_timeline = build_request_timeline(serving_trace)
@@ -617,6 +1045,11 @@ def main():
         build_runtime_decision_validation(scheduler_decision_report)
         if scheduler_decision_report
         else None
+    )
+    inflight_scheduler_validation = build_inflight_scheduler_validation(
+        scheduler_trace,
+        kv_cache_trace,
+        scheduler_decision_report,
     )
     serving_framework_validation = build_serving_framework_validation(serving_framework_report)
     cold_start_validation = build_cold_start_validation(cold_start_report)
@@ -629,6 +1062,14 @@ def main():
         "sglang_trace_adapter_report",
     )
     technology_gate_validation = build_technology_gate_validation(technology_gate_audit)
+    page_prefetch_validation = build_page_prefetch_validation(page_prefetch_report)
+    distributed_serving_validation = build_distributed_serving_validation(distributed_serving_report)
+    load_balancing_validation = build_load_balancing_validation(load_balancing_report)
+    fault_tolerance_validation = build_fault_tolerance_validation(
+        fault_tolerance_report,
+        worker_health_report,
+    )
+    grpc_contract_validation = build_grpc_contract_validation(grpc_contract_report)
     gpu_pgo_like_validation = build_gpu_pgo_like_validation(gpu_pgo_like_report)
 
     total_requests = runtime_profile.get("total_requests", 0)
@@ -691,6 +1132,8 @@ def main():
     }
     if runtime_decision_validation:
         payload["runtime_decision_validation_report"] = runtime_decision_validation
+    if inflight_scheduler_validation:
+        payload["inflight_scheduler_validation_report"] = inflight_scheduler_validation
     if serving_framework_validation:
         payload["serving_framework_validation_report"] = serving_framework_validation
     if cold_start_validation:
@@ -701,6 +1144,16 @@ def main():
         payload["sglang_trace_adapter_validation_report"] = sglang_trace_adapter_validation
     if technology_gate_validation:
         payload["technology_gate_validation_report"] = technology_gate_validation
+    if page_prefetch_validation:
+        payload["page_prefetch_validation_report"] = page_prefetch_validation
+    if distributed_serving_validation:
+        payload["distributed_serving_validation_report"] = distributed_serving_validation
+    if load_balancing_validation:
+        payload["load_balancing_validation_report"] = load_balancing_validation
+    if fault_tolerance_validation:
+        payload["fault_tolerance_validation_report"] = fault_tolerance_validation
+    if grpc_contract_validation:
+        payload["grpc_contract_validation_report"] = grpc_contract_validation
     if gpu_pgo_like_validation:
         payload["gpu_pgo_like_validation_report"] = gpu_pgo_like_validation
 
@@ -716,6 +1169,8 @@ def main():
     }
     if runtime_decision_validation:
         files["runtime_decision_validation_report.json"] = runtime_decision_validation
+    if inflight_scheduler_validation:
+        files["inflight_scheduler_validation_report.json"] = inflight_scheduler_validation
     if serving_framework_validation:
         files["serving_framework_validation_report.json"] = serving_framework_validation
     if cold_start_validation:
@@ -726,6 +1181,16 @@ def main():
         files["sglang_trace_adapter_validation_report.json"] = sglang_trace_adapter_validation
     if technology_gate_validation:
         files["technology_gate_validation_report.json"] = technology_gate_validation
+    if page_prefetch_validation:
+        files["page_prefetch_validation_report.json"] = page_prefetch_validation
+    if distributed_serving_validation:
+        files["distributed_serving_validation_report.json"] = distributed_serving_validation
+    if load_balancing_validation:
+        files["load_balancing_validation_report.json"] = load_balancing_validation
+    if fault_tolerance_validation:
+        files["fault_tolerance_validation_report.json"] = fault_tolerance_validation
+    if grpc_contract_validation:
+        files["grpc_contract_validation_report.json"] = grpc_contract_validation
     if gpu_pgo_like_validation:
         files["gpu_pgo_like_validation_report.json"] = gpu_pgo_like_validation
 

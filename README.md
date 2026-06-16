@@ -294,6 +294,12 @@ This workflow checks:
 - OOM / admission rejection behavior
 - scheduler decode batch behavior
 - baseline-vs-optimized runtime decision behavior
+- vLLM-style KV page prefetch hit/waste counters and fallback guard behavior
+- distributed serving route decisions across round-robin, least-queue, and
+  KV-aware policies
+- worker timeout, retry, quarantine, and failover behavior
+- protobuf serving contract coverage for request, health, route, and KV-shard
+  metadata
 - CPU/GPU backend placement
 
 Example summary:
@@ -312,6 +318,18 @@ validator also emits `runtime_decision_validation_report.json`. That report
 compares the baseline scheduler against the selected optimized policy, checks
 throughput improvement, p95 latency regression, decode batch efficiency, and
 whether memory-pressure policy logic was exercised.
+
+If the runtime artifact directory includes `page_prefetch_report.json`, the
+validator emits `page_prefetch_validation_report.json`. That report checks the
+input/decision/metric gate, prefetch hit/miss counters, no-OOM regression, and
+whether the scheduler kept a no-prefetch fallback when prefetch did not win.
+
+If distributed serving artifacts are present, the validator also emits
+`distributed_serving_validation_report.json`,
+`load_balancing_validation_report.json`, `fault_tolerance_validation_report.json`,
+and `grpc_contract_validation_report.json`. These reports check policy coverage,
+KV-aware routing metrics, failover/quarantine events, no request loss, and
+protobuf schema coverage without claiming a production cluster deployment.
 
 This is the path that makes the project closer to a real validation platform:
 the validation layer consumes runtime evidence from another systems repo and

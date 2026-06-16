@@ -8,5 +8,28 @@
   "avg_blocks_per_request": 25.5625,
   "max_blocks_per_request": 72,
   "failed_allocations": 0,
-  "evictions": 0
+  "evictions": 0,
+  "page_lifecycle": {},
+  "candidate_page_lifecycle": {
+    "inflight_paged_kv_continuous_batching": {
+      "enabled": true,
+      "policy": "paged_kv_lifecycle_with_pressure_aware_prefetch",
+      "total_pages": 512,
+      "page_size_tokens": 16,
+      "resident_pages": 0,
+      "peak_pages": 407,
+      "allocated_pages": 818,
+      "freed_pages": 818,
+      "prefetch_attempts": 2189,
+      "prefetch_hits": 2077,
+      "prefetch_misses": 323,
+      "prefetch_hit_rate": 0.8654,
+      "prefetch_waste": 112,
+      "pressure_prefetch_skips": 179,
+      "page_leak_count": 0
+    }
+  },
+  "inflight_page_leak_count": 0,
+  "inflight_pages_allocated": 818,
+  "inflight_pages_freed": 818
 }

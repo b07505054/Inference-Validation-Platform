@@ -1,0 +1,84 @@
+{
+  "artifact_type": "inflight_scheduler_validation_report",
+  "source": "heterogeneous-inference-runtime/scheduler_trace.json",
+  "passed": true,
+  "policy": "inflight_paged_kv_continuous_batching",
+  "positioning": "TensorRT-LLM-aligned concepts, not TensorRT-LLM internals",
+  "selected_policy": "cost_aware_memory_pressure_page_prefetch",
+  "gate": {
+    "candidate_policy": "inflight_paged_kv_continuous_batching",
+    "incumbent_policy": "cost_aware_memory_pressure_page_prefetch",
+    "passes_gate": false,
+    "ttft_tolerance": 0.1,
+    "checks": {
+      "tpot_p95_within_3_percent": false,
+      "throughput_improves": false,
+      "oom_count_not_regressed": true,
+      "reject_count_not_regressed": true,
+      "ttft_p95_within_tolerance": false,
+      "lifecycle_invariants_pass": true
+    },
+    "metrics": {
+      "candidate_tpot_p95_ms": 3.137,
+      "incumbent_tpot_p95_ms": 2.511,
+      "candidate_ttft_p95_ms": 2501.243,
+      "incumbent_ttft_p95_ms": 154.956,
+      "candidate_tokens_per_second": 725.419,
+      "incumbent_tokens_per_second": 1470.548,
+      "candidate_reject_oom_count": 0,
+      "incumbent_reject_oom_count": 0
+    }
+  },
+  "lifecycle_invariants": {
+    "finished_request_releases_pages": true,
+    "rejected_request_owns_no_pages": true,
+    "decode_request_has_resident_page": true,
+    "hard_limit_forbids_new_prefill": true,
+    "every_admitted_request_reaches_terminal_state": true,
+    "page_leak_count": 0
+  },
+  "page_lifecycle": {
+    "enabled": true,
+    "policy": "paged_kv_lifecycle_with_pressure_aware_prefetch",
+    "total_pages": 512,
+    "page_size_tokens": 16,
+    "resident_pages": 0,
+    "peak_pages": 407,
+    "allocated_pages": 818,
+    "freed_pages": 818,
+    "prefetch_attempts": 2189,
+    "prefetch_hits": 2077,
+    "prefetch_misses": 323,
+    "prefetch_hit_rate": 0.8654,
+    "prefetch_waste": 112,
+    "pressure_prefetch_skips": 179,
+    "page_leak_count": 0
+  },
+  "checks": {
+    "inflight_candidate_trace_exists": true,
+    "scheduler_tick_present": true,
+    "mixed_or_decode_present": true,
+    "lifecycle_complete": true,
+    "invariant_checks_pass": true,
+    "page_lifecycle_balanced": true,
+    "hard_limit_forbids_prefill": true,
+    "policy_gate_selection_consistent": true
+  },
+  "metrics": {
+    "ttft_ms": {
+      "p50": 1186.816,
+      "p95": 2501.243
+    },
+    "tpot_ms": {
+      "p50": 2.455,
+      "p95": 3.137
+    },
+    "pressure_limited_ticks": 506,
+    "prefill_chunk_count": 52,
+    "avg_decode_batch_size": 3.0038,
+    "decode_batch_efficiency": 0.3755,
+    "page_hit_rate": 0.8654,
+    "pages_allocated": 818,
+    "pages_freed": 818
+  }
+}
