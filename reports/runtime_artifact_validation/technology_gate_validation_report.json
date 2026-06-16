@@ -7,7 +7,7 @@
     "Compiler/runtime decision",
     "Execution or serving metric impact"
   ],
-  "main_plan_count": 12,
+  "main_plan_count": 13,
   "remaining_count": 7,
   "invalid_main_plan_items": [],
   "remaining_without_next_step": [],
@@ -67,6 +67,13 @@
       "decision": "event-loop tick chooses chunked prefill, continuous decode, drain, delay, or reject",
       "metric": "TTFT, TPOT, throughput, decode batch size, page hit rate, page leaks, reject/OOM gates",
       "status": "implemented_as_local_policy_not_tensorrt_llm_internals"
+    },
+    {
+      "technology": "paged_attention_execution_model",
+      "input": "decode batch request ids plus resident KV page table",
+      "decision": "model page-table reads, contiguous page segments, and prefetch hit/miss effects before TPOT scoring",
+      "metric": "decode attention latency, pages read per step, non-contiguous segment penalty, TPOT p95",
+      "status": "implemented_as_local_execution_cost_model_not_gpu_kernel"
     },
     {
       "technology": "sglang_trace_adapter",

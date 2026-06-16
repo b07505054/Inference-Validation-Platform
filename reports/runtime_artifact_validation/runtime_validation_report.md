@@ -7,13 +7,13 @@
 ## Prefill / Decode
 
 - Prefill latency: `38.316` ms
-- p95 decode latency: `2.511` ms
-- Tokens/sec: `1470.548`
+- p95 decode latency: `3.574` ms
+- Tokens/sec: `1200.054`
 
 ## SLO
 
-- p95 end-to-end latency: `1406.597` ms
-- p95 queue wait: `1128.618` ms
+- p95 end-to-end latency: `1774.462` ms
+- p95 queue wait: `1447.531` ms
 - OOM events: `0`
 - Admission rejection rate: `0.0`
 
@@ -29,14 +29,14 @@
 - Policy: `cost_aware_memory_pressure_page_prefetch`
 - Decode batch events: `5`
 - Avg decode batch size: `6.4`
-- p95 queue wait: `1128.618` ms
+- p95 queue wait: `1447.531` ms
 
 ## Runtime Decision Validation
 
 - Selected policy: `cost_aware_memory_pressure_page_prefetch`
 - Decision validation passed: `True`
-- Tokens/sec delta: `1172.501`
-- p95 latency delta: `-6179.235` ms
+- Tokens/sec delta: `916.369`
+- p95 latency delta: `-6208.887` ms
 - Decode batch efficiency delta: `0.675`
 - Pressure-limited candidates: `20`
 - Regression detected: `False`
@@ -49,8 +49,8 @@
 - Lifecycle complete: `True`
 - Page lifecycle balanced: `True`
 - Hard-limit behavior: `True`
-- TTFT p95: `2501.243` ms
-- TPOT p95: `3.137` ms
+- TTFT p95: `2825.94` ms
+- TPOT p95: `4.957` ms
 - Page hit rate: `0.8654`
 
 ## Serving Framework Targets
@@ -59,8 +59,8 @@
 - Validation passed: `True`
 - Available styles: `['baseline_fcfs', 'tensorrt_llm_aligned_local_runtime_policy', 'tensorrt_style', 'triton_server_style', 'vllm_sglang_style', 'vllm_style_page_prefetch']`
 - TTFT: `38.316` ms
-- TPOT p95: `2.511` ms/token
-- Throughput: `1470.548` tokens/s
+- TPOT p95: `3.574` ms/token
+- Throughput: `1200.054` tokens/s
 - Peak KV cache: `868.75` MB
 - Selection reason: `page prefetch candidate improved TPOT/e2e/throughput without KV regression`
 
@@ -70,7 +70,7 @@
 - Cold TTFT: `98.316` ms
 - Warm TTFT: `38.316` ms
 - First request penalty: `60.0` ms
-- Steady-state TPOT p95: `2.511` ms/token
+- Steady-state TPOT p95: `3.574` ms/token
 - Available artifacts: `['onnx_fp32', 'tensorrt_fp16_engine', 'tensorrt_int8_engine', 'executorch_xnnpack_pte']`
 - TensorRT available: `False`
 
@@ -80,17 +80,17 @@
   input: `vllm style synthetic request/decode trace`
   decision: `continuous batching admission and paged-KV pressure cap`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1470.548` tokens/s
+  throughput: `1200.054` tokens/s
 - SGLang validation passed: `True`
   input: `sglang style synthetic request/decode trace`
   decision: `request/decode scheduling with prefix-reuse metadata`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1470.548` tokens/s
+  throughput: `1200.054` tokens/s
 
 ## Technology Gate
 
 - Validation passed: `True`
-- Main-plan technologies: `12`
+- Main-plan technologies: `13`
 - Recorded backlog technologies: `7`
 - Invalid main-plan items: `[]`
 
@@ -102,8 +102,8 @@
 - Metric: `prefetch hit rate, wasted prefetch blocks, TPOT p95, decode p95, throughput, queue wait, OOM/rejection rate`
 - Selected policy: `cost_aware_memory_pressure_page_prefetch`
 - Hit rate: `0.8808`
-- TPOT p95 delta: `-0.7331` ms/token
-- Tokens/sec delta: `234.406`
+- TPOT p95 delta: `-0.7763` ms/token
+- Tokens/sec delta: `176.521`
 
 ## Distributed Serving
 

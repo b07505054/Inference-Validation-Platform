@@ -233,6 +233,10 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
         kv_cache_trace.get("candidate_page_lifecycle", {})
         .get("inflight_paged_kv_continuous_batching", {})
     )
+    paged_attention = (
+        kv_cache_trace.get("candidate_paged_attention_execution", {})
+        .get("inflight_paged_kv_continuous_batching", {})
+    )
     steps = inflight.get("steps", [])
     gate = decision_report.get("inflight_paged_kv_candidate", {}) if decision_report else {}
     selected_policy = decision_report.get("selected_policy") if decision_report else None
@@ -287,6 +291,18 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
         == row.get("page_lifecycle", {}).get("inflight_candidate", {}).get("freed_pages")
         for row in scenario_results
     )
+    scenario_paged_attention_present = all(
+        row.get("paged_attention_execution", {}).get("inflight_candidate", {}).get("decode_steps", 0) > 0
+        and row.get("paged_attention_execution", {}).get("inflight_candidate", {}).get("pages_read", 0) > 0
+        and row.get("paged_attention_execution", {}).get("inflight_candidate", {}).get("p95_latency_ms", 0.0) > 0.0
+        for row in scenario_results
+    )
+    paged_attention_valid = (
+        paged_attention.get("enabled") is True
+        and paged_attention.get("decode_steps", 0) > 0
+        and paged_attention.get("pages_read", 0) > 0
+        and paged_attention.get("p95_latency_ms", 0.0) > 0.0
+    )
     inflight_win_has_no_reject_or_oom_regression = all(
         row.get("checks", {}).get("oom_count_not_regressed") is True
         and row.get("checks", {}).get("reject_count_not_regressed") is True
@@ -309,9 +325,11 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
             and lifecycle_complete
             and invariant_checks_pass
             and page_lifecycle_balanced
+            and paged_attention_valid
             and hard_limit_behavior
             and gate_consistent
             and workload_aware_selection_valid
+            and scenario_paged_attention_present
         ),
         "policy": "inflight_paged_kv_continuous_batching",
         "positioning": inflight.get("positioning"),
@@ -319,6 +337,7 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
         "gate": gate,
         "lifecycle_invariants": invariants,
         "page_lifecycle": page_lifecycle,
+        "paged_attention": paged_attention,
         "checks": {
             "inflight_candidate_trace_exists": bool(inflight),
             "scheduler_tick_present": scheduler_tick_present,
@@ -326,11 +345,13 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
             "lifecycle_complete": lifecycle_complete,
             "invariant_checks_pass": invariant_checks_pass,
             "page_lifecycle_balanced": page_lifecycle_balanced,
+            "paged_attention_execution_present": paged_attention_valid,
             "hard_limit_forbids_prefill": hard_limit_behavior,
             "policy_gate_selection_consistent": gate_consistent,
             "at_least_one_scenario_retains_incumbent": bool(fallback_scenarios),
             "at_least_one_scenario_selects_inflight": bool(inflight_win_scenarios),
             "all_scenario_page_lifecycles_balanced": scenario_page_lifecycle_balanced,
+            "all_scenario_paged_attention_present": scenario_paged_attention_present,
             "inflight_win_has_no_reject_or_oom_regression": inflight_win_has_no_reject_or_oom_regression,
         },
         "scenario_results": scenario_results,
@@ -342,6 +363,9 @@ def build_inflight_scheduler_validation(scheduler_trace, kv_cache_trace, decisio
             "avg_decode_batch_size": inflight.get("avg_decode_batch_size"),
             "decode_batch_efficiency": inflight.get("decode_batch_efficiency"),
             "page_hit_rate": page_lifecycle.get("prefetch_hit_rate"),
+            "paged_attention_p95_latency_ms": paged_attention.get("p95_latency_ms"),
+            "paged_attention_pages_read": paged_attention.get("pages_read"),
+            "paged_attention_avg_pages_per_step": paged_attention.get("avg_pages_per_step"),
             "pages_allocated": page_lifecycle.get("allocated_pages"),
             "pages_freed": page_lifecycle.get("freed_pages"),
         },
