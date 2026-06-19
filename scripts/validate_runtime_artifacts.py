@@ -1,9 +1,19 @@
 import argparse
 import json
-import math
+import sys
 from collections import Counter
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.ivp.statistics import (
+    bootstrap_percentile_ci,
+    mann_whitney_u_test,
+    percentile,
+    regression_gate,
+)
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
@@ -19,15 +29,6 @@ def load_optional_json(path: Path, fallback):
 def write_json(path: Path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-
-
-def percentile(values, p):
-    if not values:
-        return 0.0
-    values = sorted(values)
-    rank = math.ceil((p / 100.0) * len(values)) - 1
-    rank = max(0, min(rank, len(values) - 1))
-    return values[rank]
 
 
 def event_times(serving_trace, event_name):
@@ -79,6 +80,205 @@ def build_request_timeline(serving_trace):
     requests = list(per_request.values())
     requests.sort(key=lambda row: row["request_id"])
     return requests
+
+
+def _samples_from_trace(serving_trace):
+    request_timeline = build_request_timeline(serving_trace)
+    e2e_latencies = [
+        row["finish_ms"] - row["arrival_ms"]
+        for row in request_timeline
+        if row.get("arrival_ms") is not None
+        and row.get("finish_ms") is not None
+        and row.get("status") == "completed"
+    ]
+    queue_waits = [
+        row.get("queue_wait_ms", 0.0)
+        for row in request_timeline
+        if row.get("status") == "completed"
+    ]
+    decode_tpot = []
+    paged_attention_latencies = []
+
+    for event in serving_trace.get("events", []):
+        if event.get("event") == "tokens_generated":
+            tokens = event.get("tokens_generated", 0)
+            decode_latency = event.get("decode_latency_ms")
+            if tokens and decode_latency is not None:
+                decode_tpot.append(float(decode_latency) / float(tokens))
+        if event.get("event") == "decode_step":
+            paged_attention = event.get("paged_attention", {})
+            latency = paged_attention.get("latency_ms")
+            if latency is not None:
+                paged_attention_latencies.append(float(latency))
+
+    return {
+        "e2e_latency_ms": e2e_latencies,
+        "queue_wait_ms": queue_waits,
+        "decode_tpot_ms": decode_tpot,
+        "paged_attention_latency_ms": paged_attention_latencies,
+    }
+
+
+def extract_policy_sample_distributions(serving_trace):
+    policies = {}
+
+    for policy, samples in serving_trace.get("policy_samples", {}).items():
+        policies[policy] = {
+            name: [float(value) for value in values]
+            for name, values in samples.items()
+            if isinstance(values, list)
+        }
+
+    for policy, trace in serving_trace.get("policy_traces", {}).items():
+        policies[policy] = _samples_from_trace(trace)
+
+    current_policy = serving_trace.get("scheduler_policy")
+    if current_policy and current_policy not in policies:
+        policies[current_policy] = _samples_from_trace(serving_trace)
+
+    return policies
+
+
+def _policy_summary_map(scheduler_decision_report):
+    summaries = {
+        row.get("policy"): row
+        for row in scheduler_decision_report.get("policies", [])
+        if row.get("policy")
+    }
+    for scenario in scheduler_decision_report.get("scenario_results", []):
+        for row in scenario.get("policy_summaries", []):
+            summaries.setdefault(row.get("policy"), row)
+    return summaries
+
+
+def _build_metric_statistical_validation(
+    baseline_samples,
+    candidate_samples,
+    confidence_level,
+    bootstrap_resamples,
+    regression_threshold_pct,
+    alpha,
+):
+    baseline_ci = bootstrap_percentile_ci(
+        baseline_samples,
+        confidence=confidence_level,
+        resamples=bootstrap_resamples,
+    )
+    candidate_ci = bootstrap_percentile_ci(
+        candidate_samples,
+        confidence=confidence_level,
+        resamples=bootstrap_resamples,
+    )
+    mann_whitney = mann_whitney_u_test(baseline_samples, candidate_samples)
+    gate = regression_gate(
+        baseline_samples,
+        candidate_samples,
+        threshold_pct=regression_threshold_pct,
+        alpha=alpha,
+    )
+    return {
+        "baseline": baseline_ci,
+        "candidate": candidate_ci,
+        "mann_whitney": {
+            **mann_whitney,
+            "available": mann_whitney.get("available") is True,
+        },
+        "regression_gate": gate,
+    }
+
+
+def build_statistical_validation(
+    serving_trace,
+    scheduler_decision_report,
+    confidence_level=0.95,
+    bootstrap_resamples=1000,
+    regression_threshold_pct=3.0,
+    alpha=0.05,
+):
+    baseline_policy = "fcfs_fixed_batch"
+    candidate_policy = (
+        scheduler_decision_report.get("selected_policy")
+        or serving_trace.get("scheduler_policy")
+        or "unknown"
+    )
+    policy_samples = extract_policy_sample_distributions(serving_trace)
+    baseline_samples = policy_samples.get(baseline_policy, {})
+    candidate_samples = policy_samples.get(candidate_policy, {})
+    metric_names = [
+        "e2e_latency_ms",
+        "queue_wait_ms",
+        "decode_tpot_ms",
+        "paged_attention_latency_ms",
+    ]
+    available_metric_names = [
+        name for name in metric_names
+        if baseline_samples.get(name) and candidate_samples.get(name)
+    ]
+
+    aggregate_policies = _policy_summary_map(scheduler_decision_report)
+    base_payload = {
+        "artifact_type": "statistical_validation_report",
+        "source": "heterogeneous-inference-runtime runtime artifacts",
+        "baseline_policy": baseline_policy,
+        "candidate_policy": candidate_policy,
+        "confidence_level": confidence_level,
+        "bootstrap_resamples": bootstrap_resamples,
+        "regression_threshold_pct": regression_threshold_pct,
+        "alpha": alpha,
+    }
+
+    if not available_metric_names:
+        return {
+            **base_payload,
+            "passed": True,
+            "sample_backed": False,
+            "reason": "aggregate_only_metrics",
+            "mann_whitney_available": False,
+            "available_policy_samples": {
+                policy: sorted(samples.keys())
+                for policy, samples in policy_samples.items()
+            },
+            "aggregate_policy_summaries": {
+                policy: {
+                    "p95_latency_ms": row.get("p95_latency_ms"),
+                    "tpot_p95_ms": row.get("tpot_p95_ms"),
+                    "ttft_p95_ms": row.get("ttft_p95_ms"),
+                    "tokens_per_second": row.get("tokens_per_second"),
+                }
+                for policy, row in aggregate_policies.items()
+                if policy in {baseline_policy, candidate_policy}
+            },
+        }
+
+    metrics = {
+        name: _build_metric_statistical_validation(
+            baseline_samples[name],
+            candidate_samples[name],
+            confidence_level,
+            bootstrap_resamples,
+            regression_threshold_pct,
+            alpha,
+        )
+        for name in available_metric_names
+    }
+    passed = all(
+        row["regression_gate"]["passed"]
+        for row in metrics.values()
+    )
+    return {
+        **base_payload,
+        "passed": passed,
+        "sample_backed": True,
+        "mann_whitney_available": True,
+        "metrics": metrics,
+        "available_policy_samples": {
+            policy: {
+                name: len(values)
+                for name, values in samples.items()
+            }
+            for policy, samples in policy_samples.items()
+        },
+    }
 
 
 def build_scheduler_analysis(scheduler_trace, serving_trace):
@@ -800,6 +1000,7 @@ def write_markdown_report(path, payload):
     load_balancing = payload.get("load_balancing_validation_report")
     fault_tolerance = payload.get("fault_tolerance_validation_report")
     grpc_contract = payload.get("grpc_contract_validation_report")
+    statistical = payload.get("statistical_validation_report")
 
     lines = [
         f"# Runtime Artifact Validation Report: {validation['job_id']}",
@@ -852,6 +1053,40 @@ def write_markdown_report(path, payload):
             f"- Regression detected: `{decision['regression_detected']}`",
             "",
         ])
+
+    if statistical:
+        lines.extend([
+            "## Statistical Validation",
+            "",
+            f"- Validation passed: `{statistical.get('passed')}`",
+            f"- Sample-backed: `{statistical.get('sample_backed')}`",
+            f"- Baseline policy: `{statistical.get('baseline_policy')}`",
+            f"- Candidate policy: `{statistical.get('candidate_policy')}`",
+            f"- Regression threshold: `{statistical.get('regression_threshold_pct')}`%",
+            f"- Alpha: `{statistical.get('alpha')}`",
+        ])
+        if statistical.get("sample_backed"):
+            metrics = statistical.get("metrics", {})
+            for metric_name, metric in metrics.items():
+                baseline = metric.get("baseline", {})
+                candidate = metric.get("candidate", {})
+                mann_whitney = metric.get("mann_whitney", {})
+                gate = metric.get("regression_gate", {})
+                lines.extend([
+                    f"- `{metric_name}` baseline p95: `{baseline.get('p95')}` ms "
+                    f"CI `{baseline.get('p95_ci')}` n=`{baseline.get('sample_count')}`",
+                    f"- `{metric_name}` candidate p95: `{candidate.get('p95')}` ms "
+                    f"CI `{candidate.get('p95_ci')}` n=`{candidate.get('sample_count')}`",
+                    f"- `{metric_name}` Mann-Whitney p-value: `{mann_whitney.get('p_value')}`",
+                    f"- `{metric_name}` regression gate: `{gate.get('passed')}` "
+                    f"({gate.get('reason')})",
+                ])
+        else:
+            lines.extend([
+                f"- Mann-Whitney available: `{statistical.get('mann_whitney_available')}`",
+                f"- Reason: `{statistical.get('reason')}`",
+            ])
+        lines.append("")
 
     if inflight:
         checks = inflight.get("checks", {})
@@ -1144,6 +1379,18 @@ def main():
     )
     grpc_contract_validation = build_grpc_contract_validation(grpc_contract_report)
     gpu_pgo_like_validation = build_gpu_pgo_like_validation(gpu_pgo_like_report)
+    statistical_validation = build_statistical_validation(
+        serving_trace,
+        scheduler_decision_report,
+    )
+    statistical_regression_failed = (
+        statistical_validation.get("sample_backed") is True
+        and statistical_validation.get("passed") is False
+    )
+    if statistical_regression_failed:
+        validation_report["passed"] = False
+        slo_report["passed"] = False
+        slo_report["slo_violation_rate"] = 1.0
 
     total_requests = runtime_profile.get("total_requests", 0)
     rejected = runtime_profile.get("rejected_requests", 0)
@@ -1229,6 +1476,8 @@ def main():
         payload["grpc_contract_validation_report"] = grpc_contract_validation
     if gpu_pgo_like_validation:
         payload["gpu_pgo_like_validation_report"] = gpu_pgo_like_validation
+    if statistical_validation:
+        payload["statistical_validation_report"] = statistical_validation
 
     files = {
         "runtime_validation_report.json": payload,
@@ -1266,6 +1515,8 @@ def main():
         files["grpc_contract_validation_report.json"] = grpc_contract_validation
     if gpu_pgo_like_validation:
         files["gpu_pgo_like_validation_report.json"] = gpu_pgo_like_validation
+    if statistical_validation:
+        files["statistical_validation_report.json"] = statistical_validation
 
     for filename, file_payload in files.items():
         write_json(output_dir / filename, file_payload)

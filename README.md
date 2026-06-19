@@ -98,6 +98,9 @@ JSON report + Markdown report
 - Scheduler trace analysis
 - Heterogeneous backend placement validation
 - Runtime SLO report generation
+- Statistical validation for runtime artifacts, including bootstrap p95
+  confidence intervals, Mann-Whitney regression tests, and threshold-based p95
+  SLO regression gates over latency distributions
 
 ## Control Plane API
 
@@ -115,7 +118,51 @@ POST /workers/heartbeat
 POST /jobs/submit
 GET  /reports/{job_id}
 GET  /devices
+GET  /metrics
 ```
+
+## Observability
+
+The API exposes Prometheus text-format control-plane metrics:
+
+```bash
+curl http://127.0.0.1:8000/metrics
+```
+
+These metrics describe the validation platform itself, not live inference FPS or
+model-serving latency. The intended split is:
+
+- `inference-validation-platform`: job status, registered devices, heartbeats,
+  validation outcomes, and event timeline counts.
+- `heterogeneous-inference-runtime`: live inference runtime metrics such as FPS
+  and latency.
+
+Example metrics:
+
+```text
+# HELP ivp_jobs_current Number of IVP jobs by status.
+# TYPE ivp_jobs_current gauge
+ivp_jobs_current{status="passed"} 1
+# HELP ivp_validation_results_total Total completed IVP validation results by outcome.
+# TYPE ivp_validation_results_total counter
+ivp_validation_results_total{result="pass"} 1
+```
+
+Run the local Prometheus + Grafana demo:
+
+```bash
+uvicorn src.ivp.api:app --reload
+docker compose -f docker-compose.observability.yml up
+```
+
+Open Grafana at `http://127.0.0.1:3000` and load the
+`IVP Control Plane Observability` dashboard. The default local Grafana login is
+`admin` / `admin`.
+
+The Prometheus config scrapes `host.docker.internal:8000/metrics`, which works
+with Docker Desktop on macOS and Windows. On Linux, either add
+`extra_hosts: ["host.docker.internal:host-gateway"]` to the Prometheus service
+or replace the target with the host/network address that can reach the IVP API.
 
 Example worker registration:
 
@@ -277,11 +324,21 @@ reports/runtime_artifact_validation/
 ├── request_timeline.json
 ├── runtime_decision_validation_report.json
 ├── runtime_profile_imported.json
+├── statistical_validation_report.json
 ├── runtime_validation_report.json
 ├── runtime_validation_report.md
 ├── scheduler_analysis.json
 ├── slo_report.json
 └── manifest.json
+```
+
+Statistical validation truth boundary:
+
+```text
+Sample-backed reports can claim bootstrap p95 confidence intervals,
+Mann-Whitney regression tests, and threshold-based p95 SLO gates.
+Aggregate-only reports can claim p95/SLO validation, but not statistical
+significance.
 ```
 
 This workflow checks:

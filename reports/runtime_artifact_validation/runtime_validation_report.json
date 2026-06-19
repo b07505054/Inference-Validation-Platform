@@ -1913,5 +1913,41 @@
       "Add fp16/bf16 candidate rows and vectorized CUDA candidate when kernels are implemented.",
       "Attach real Nsight Compute occupancy/DRAM/stall metrics when ncu capture is available."
     ]
+  },
+  "statistical_validation_report": {
+    "artifact_type": "statistical_validation_report",
+    "source": "heterogeneous-inference-runtime runtime artifacts",
+    "baseline_policy": "fcfs_fixed_batch",
+    "candidate_policy": "cost_aware_memory_pressure_page_prefetch",
+    "confidence_level": 0.95,
+    "bootstrap_resamples": 1000,
+    "regression_threshold_pct": 3.0,
+    "alpha": 0.05,
+    "passed": true,
+    "sample_backed": false,
+    "reason": "aggregate_only_metrics",
+    "mann_whitney_available": false,
+    "available_policy_samples": {
+      "cost_aware_memory_pressure_page_prefetch": [
+        "decode_tpot_ms",
+        "e2e_latency_ms",
+        "paged_attention_latency_ms",
+        "queue_wait_ms"
+      ]
+    },
+    "aggregate_policy_summaries": {
+      "fcfs_fixed_batch": {
+        "p95_latency_ms": 7983.349,
+        "tpot_p95_ms": 3.26,
+        "ttft_p95_ms": 175.864,
+        "tokens_per_second": 283.685
+      },
+      "cost_aware_memory_pressure_page_prefetch": {
+        "p95_latency_ms": 1774.462,
+        "tpot_p95_ms": 3.574,
+        "ttft_p95_ms": 154.956,
+        "tokens_per_second": 1200.054
+      }
+    }
   }
 }

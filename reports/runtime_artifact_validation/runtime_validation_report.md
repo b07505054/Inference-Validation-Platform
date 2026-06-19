@@ -41,6 +41,17 @@
 - Pressure-limited candidates: `20`
 - Regression detected: `False`
 
+## Statistical Validation
+
+- Validation passed: `True`
+- Sample-backed: `False`
+- Baseline policy: `fcfs_fixed_batch`
+- Candidate policy: `cost_aware_memory_pressure_page_prefetch`
+- Regression threshold: `3.0`%
+- Alpha: `0.05`
+- Mann-Whitney available: `False`
+- Reason: `aggregate_only_metrics`
+
 ## In-Flight Paged KV Scheduler
 
 - Validation passed: `True`

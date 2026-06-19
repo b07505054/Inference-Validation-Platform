@@ -259,3 +259,66 @@ class SQLiteStore:
                 "SELECT * FROM devices ORDER BY device_id ASC"
             ).fetchall()
             return [dict(row) for row in rows]
+
+    def control_plane_metrics(self) -> dict[str, list[dict[str, Any]]]:
+        with self.lock:
+            jobs = self.conn.execute(
+                """
+                SELECT status, COUNT(*) AS value
+                FROM jobs
+                GROUP BY status
+                ORDER BY status ASC
+                """
+            ).fetchall()
+            devices = self.conn.execute(
+                """
+                SELECT status, backend, COUNT(*) AS value
+                FROM devices
+                GROUP BY status, backend
+                ORDER BY status ASC, backend ASC
+                """
+            ).fetchall()
+            heartbeats = self.conn.execute(
+                """
+                SELECT
+                    backend,
+                    CASE
+                        WHEN healthy = 1 THEN 'true'
+                        ELSE 'false'
+                    END AS healthy,
+                    COUNT(*) AS value
+                FROM heartbeats
+                GROUP BY backend, healthy
+                ORDER BY backend ASC, healthy ASC
+                """
+            ).fetchall()
+            events = self.conn.execute(
+                """
+                SELECT event_type, COUNT(*) AS value
+                FROM events
+                GROUP BY event_type
+                ORDER BY event_type ASC
+                """
+            ).fetchall()
+            validation_results = self.conn.execute(
+                """
+                SELECT
+                    CASE
+                        WHEN status = 'passed' THEN 'pass'
+                        ELSE 'fail'
+                    END AS result,
+                    COUNT(*) AS value
+                FROM jobs
+                WHERE status IN ('passed', 'failed')
+                GROUP BY result
+                ORDER BY result ASC
+                """
+            ).fetchall()
+
+            return {
+                "jobs": [dict(row) for row in jobs],
+                "devices": [dict(row) for row in devices],
+                "heartbeats": [dict(row) for row in heartbeats],
+                "events": [dict(row) for row in events],
+                "validation_results": [dict(row) for row in validation_results],
+            }

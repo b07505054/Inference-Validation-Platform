@@ -1,12 +1,13 @@
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 
 from .api_models import RegisterWorkerRequest, SubmitJobRequest
 from .event_log import EventLog
 from .heartbeat import HeartbeatMonitor
 from .inventory import DeviceInventory
 from .models import Device, Heartbeat
+from .metrics import render_prometheus_metrics
 from .report import write_markdown_report, write_report
 from .scheduler import Scheduler
 from .store import SQLiteStore
@@ -151,3 +152,11 @@ def list_devices() -> dict:
     return {
         "devices": store.list_devices(),
     }
+
+
+@app.get("/metrics")
+def prometheus_metrics():
+    return Response(
+        content=render_prometheus_metrics(store.control_plane_metrics()),
+        media_type="text/plain; version=0.0.4",
+    )
