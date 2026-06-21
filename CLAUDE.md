@@ -96,6 +96,12 @@ Run tests:
 pytest
 ```
 
+Run the same checks CI runs (used by `.github/workflows/ci.yml` and optionally by a Claude Code post-edit hook):
+
+```bash
+bash scripts/check.sh
+```
+
 Run the API:
 
 ```bash

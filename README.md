@@ -485,6 +485,16 @@ This project models infrastructure patterns used in production AI hardware and i
 
 It is intentionally small, but the control-plane shape mirrors real systems used by AI infrastructure, accelerator runtime, robotics, and on-device ML teams.
 
+## Validation Infrastructure
+
+This repo runs `pytest` on every push/PR to `main` via `.github/workflows/ci.yml` (Python 3.11). Run the same checks locally with:
+
+```bash
+bash scripts/check.sh
+```
+
+A Claude Code hook may also call `scripts/check.sh` after Python file edits; see `.claude/settings.json`.
+
 ## Project Structure
 
 ```text
