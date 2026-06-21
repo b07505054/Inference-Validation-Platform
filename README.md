@@ -733,6 +733,21 @@ compiler artifact
 The validation layer should not invent compiler or runtime behavior. It should
 check and summarize artifacts produced by the lower layers.
 
+## Handoff Documentation
+
+For Codex-to-Claude Code handoff, start with:
+
+- `CLAUDE.md`
+- `docs/architecture.md`
+- `docs/data_flow.md`
+- `docs/design_decisions.md`
+- `docs/technical_debt.md`
+- `docs/future_work.md`
+
+These files document the platform architecture, validation data flow,
+implemented behavior, simulated behavior, assumptions, technical debt, and
+realistic next steps.
+
 ## Next Extensions
 
 - Add a real ONNX Runtime worker using `heterogeneous-inference-runtime/scripts/benchmark.py`
