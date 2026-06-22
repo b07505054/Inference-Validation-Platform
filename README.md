@@ -493,6 +493,19 @@ This repo runs `pytest` on every push/PR to `main` via `.github/workflows/ci.yml
 bash scripts/check.sh
 ```
 
+`scripts/check.sh` only uses `.venv/bin/python`; it does not fall back to a
+system Python and does not install or upgrade packages. Set up the
+project-local virtualenv once before running checks:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+If `.venv` is missing or dependencies aren't installed, `scripts/check.sh`
+stops with an error instead of silently using a different interpreter. CI
+creates and populates `.venv` itself on every run.
+
 A Claude Code hook may also call `scripts/check.sh` after Python file edits; see `.claude/settings.json`.
 
 ## Project Structure

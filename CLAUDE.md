@@ -84,16 +84,17 @@ Simulated/demo-only:
 
 ## Common Commands
 
-Install dependencies:
+Set up the project-local virtualenv (one-time):
 
 ```bash
-python3.11 -m pip install -r requirements.txt
+python3.11 -m venv .venv
+.venv/bin/pip install -r requirements.txt
 ```
 
 Run tests:
 
 ```bash
-pytest
+.venv/bin/python -m pytest
 ```
 
 Run the same checks CI runs (used by `.github/workflows/ci.yml` and optionally by a Claude Code post-edit hook):
@@ -101,6 +102,12 @@ Run the same checks CI runs (used by `.github/workflows/ci.yml` and optionally b
 ```bash
 bash scripts/check.sh
 ```
+
+`scripts/check.sh` strictly requires `.venv/bin/python`. It does not fall back
+to `python3`/system Python and does not install or upgrade packages. If
+`.venv` or its dependencies are missing, it stops with an error rather than
+silently using a different interpreter. CI creates and populates `.venv`
+itself on every run.
 
 Run the API:
 
