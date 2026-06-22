@@ -506,8 +506,6 @@ If `.venv` is missing or dependencies aren't installed, `scripts/check.sh`
 stops with an error instead of silently using a different interpreter. CI
 creates and populates `.venv` itself on every run.
 
-A Claude Code hook may also call `scripts/check.sh` after Python file edits; see `.claude/settings.json`.
-
 ## Project Structure
 
 ```text
@@ -756,11 +754,10 @@ compiler artifact
 The validation layer should not invent compiler or runtime behavior. It should
 check and summarize artifacts produced by the lower layers.
 
-## Handoff Documentation
+## Documentation
 
-For Codex-to-Claude Code handoff, start with:
+For deeper project notes, start with:
 
-- `CLAUDE.md`
 - `docs/architecture.md`
 - `docs/data_flow.md`
 - `docs/design_decisions.md`
