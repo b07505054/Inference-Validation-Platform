@@ -65,6 +65,7 @@ Scripts:
 Implemented:
 
 - API endpoints, SQLite persistence, Prometheus control-plane metrics, scheduler filtering/ranking, retry/quarantine flow, report writing, external runtime summary ingestion, and runtime artifact report generation.
+- Runtime artifact validation reports for runtime decisions, in-flight scheduling, serving-framework comparisons, vLLM/SGLang trace adapters, cold start, page prefetch, distributed serving, load balancing, fault tolerance, gRPC contract coverage, GPU PGO-like evidence, technology gates, and statistical validation where sample-backed data is available.
 
 Simulated/demo-only:
 
@@ -81,6 +82,12 @@ Simulated/demo-only:
 - Add external runtime worker tests.
 - Split the large runtime validator script into smaller modules.
 - Add explicit evidence/metric source labels to reports.
+
+Existing focused tests:
+
+- `tests/test_statistics.py`
+- `tests/test_control_plane_metrics.py`
+- `tests/test_validate_runtime_artifacts_statistics.py`
 
 ## Common Commands
 
@@ -144,6 +151,23 @@ python3 scripts/validate_runtime_artifacts.py \
   --output-dir reports/runtime_artifact_validation
 ```
 
+When optional source artifacts are present, runtime artifact validation may emit:
+
+- `runtime_decision_validation_report.json`
+- `inflight_scheduler_validation_report.json`
+- `serving_framework_validation_report.json`
+- `vllm_trace_adapter_validation_report.json`
+- `sglang_trace_adapter_validation_report.json`
+- `cold_start_validation_report.json`
+- `page_prefetch_validation_report.json`
+- `distributed_serving_validation_report.json`
+- `load_balancing_validation_report.json`
+- `fault_tolerance_validation_report.json`
+- `grpc_contract_validation_report.json`
+- `gpu_pgo_like_validation_report.json`
+- `technology_gate_validation_report.json`
+- `statistical_validation_report.json`
+
 ## Handoff Assumptions
 
 - This project is local/demo oriented, not production deployed.
@@ -152,129 +176,6 @@ python3 scripts/validate_runtime_artifacts.py \
 - Control-plane metrics describe IVP state, not live inference serving performance.
 - Any estimated metrics must be labeled estimated.
 
-## Documentation Hierarchy
+## Portfolio-Level Policy
 
-Truth must flow in the following order:
-
-Code
-↓
-Artifacts
-↓
-README.md
-↓
-CLAUDE.md
-↓
-docs/
-
-Lower levels must never contradict higher levels.
-
-Documentation must describe reality rather than invent behavior.
-
-If uncertainty exists, trust code and generated artifacts.
-
-Never exaggerate capabilities.
-
-Never claim production behavior unless code and artifacts support it.
-
-## README Contract
-
-README.md exists to answer:
-
-1. What is it?
-2. Why is it interesting?
-3. How do I run it?
-4. What results does it produce?
-
-README should emphasize user-facing understanding.
-
-Avoid implementation details unless necessary.
-
-Avoid maintenance instructions.
-
-## CLAUDE.md Contract
-
-CLAUDE.md exists to answer:
-
-1. How do I maintain it?
-2. What commands are canonical?
-3. Which components are implemented?
-4. Which components are simulated?
-5. Which validation commands must pass?
-6. What files should not be changed casually?
-
-CLAUDE.md is intended for maintainers and future AI agents.
-
-## docs/ Contract
-
-docs/ exists to answer:
-
-1. Why is it designed this way?
-2. What tradeoffs were made?
-3. What is measured versus modeled?
-4. What assumptions exist?
-5. What limitations remain?
-6. What future work is possible?
-
-docs/ explains architecture and rationale rather than usage.
-
-## Documentation Principles
-
-Code > Artifacts > README > CLAUDE.md > docs/
-
-Never reverse this order.
-
-Never infer unsupported features.
-
-Never create claims unsupported by code or artifacts.
-
-Prefer conservative wording.
-
-Call synthetic benchmarks synthetic.
-
-Call simulated systems simulated.
-
-Distinguish measured behavior from modeled behavior.
-
-## Git Authorship Policy
-
-The user is the sole maintainer and owner of this repository.
-
-AI agents may modify files as requested.
-
-AI agents must not add AI authorship metadata.
-
-Never add:
-
-* Co-Authored-By entries
-* Co-authored-by trailers
-* Claude authorship metadata
-* AI signatures
-* Generated-by-AI footers
-* any metadata that makes an AI system appear as a repository contributor
-
-Commit policy:
-
-* By default, do not run git commit.
-* If the user explicitly asks in the current conversation to commit, an AI agent may run git add and git commit.
-* Commits must use the machine's global Git identity (`git config --global user.name` and `git config --global user.email`).
-* Commits created by an AI agent must use the user's configured git author and committer identity.
-* Never set author or committer identity to Claude, Anthropic, or any AI/bot identity.
-* Commit messages must not mention AI authorship unless the user explicitly asks.
-* Before committing, show git status and the staged diff summary when practical.
-
-Push policy:
-
-* By default, do not run git push.
-* Only run git push if the user explicitly asks in the current conversation.
-* Pushes must use the user's machine/account Git authentication, never a Claude/Anthropic/bot identity.
-* Never force-push unless the user explicitly asks for a force push and the reason is explained.
-
-History policy:
-
-* Do not create branches, rewrite history, rebase, reset, or amend commits unless the user explicitly asks in the current conversation.
-* Never rewrite public history without explicit user approval.
-
-Ownership rule:
-
-* The user remains the sole author/maintainer for portfolio presentation purposes.
-* No AI system should appear as a repository contributor.
+When this repository is maintained inside the `systems-portfolio` wrapper, follow the root `CLAUDE.md` for shared documentation hierarchy, benchmark honesty, and Git authorship rules. Keep this file focused on repository-specific capabilities, truth boundaries, and validation commands.
