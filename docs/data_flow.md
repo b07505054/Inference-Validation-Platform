@@ -164,6 +164,9 @@ Runtime artifact validation outputs:
 - `request_timeline.json`
 - `runtime_profile_imported.json`
 - Optional validation reports for decision, framework, cold start, trace adapters, technology gates, prefetch, distributed serving, load balancing, fault tolerance, gRPC contract, GPU PGO-like reports, and statistical validation.
+- Compiler/runtime consistency reports from `RuntimeResult` dictionaries that
+  include compiler summaries, backend decisions, memory decisions, replay
+  decisions, scheduling decisions, and execution statistics.
 - `manifest.json`
 
 ## Metrics

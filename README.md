@@ -10,6 +10,25 @@ In one sentence:
 Validation platform turns runtime traces into correctness, latency, memory, and scheduling reports.
 ```
 
+## Recent Updates
+
+- Added compiler/runtime consistency validation for checking cross-repo
+  compiler artifacts against runtime evidence.
+- Added observability and statistical validation: Prometheus control-plane
+  metrics, Grafana dashboard config, bootstrap p95 confidence intervals,
+  Mann-Whitney regression tests, and SLO regression gates.
+- Expanded runtime artifact validation for in-flight paged KV, workload-aware
+  scheduling, serving-framework reports, cold start, distributed serving,
+  load balancing, fault tolerance, gRPC contract coverage, GPU PGO-like
+  evidence, and technology gates.
+- Standardized local/CI validation through `bash scripts/check.sh` with a
+  project-local `.venv`.
+
+Truth boundary: IVP validates and reports on artifacts, mock workers, and
+control-plane events. It is not itself a live inference server and its
+Prometheus metrics describe validation-platform state, not model-serving FPS or
+token throughput.
+
 ## Why This Exists
 
 Modern AI hardware teams need more than model benchmarks. They need infrastructure that can answer:

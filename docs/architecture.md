@@ -6,6 +6,7 @@ Inference Validation Platform is a small Python control plane for validating com
 
 - Control-plane validation: register workers, receive heartbeats, schedule an artifact to a healthy worker, run validation, quarantine failed devices, retry on another device, and emit reports.
 - Runtime artifact validation: read traces and reports from `heterogeneous-inference-runtime` and convert them into LLM latency, scheduler, KV-cache, backend-placement, SLO, statistical, and serving-framework validation reports.
+- Compiler/runtime consistency validation: check that runtime result dictionaries preserve or explicitly document decisions imported from compiler summaries, without treating structural consistency as measured performance.
 
 The project is intentionally demo-scale. Some behavior is implemented as working local code, some behavior is simulated, and some inputs are expected to come from sibling repositories.
 
@@ -161,6 +162,28 @@ Important runtime shape: global module-level `inventory`, `store`, and `heartbea
 ### `src/ivp/metrics.py`
 
 Prometheus text rendering for control-plane metrics.
+
+### Compiler/Runtime Consistency
+
+`src/ivp/compiler_runtime_consistency.py` validates structural consistency
+between compiler summaries and runtime result dictionaries.
+
+Implemented checks include:
+
+- Backend selection matches the compiler plan or has a documented runtime
+  override.
+- Selected backend appears in the attempted backend chain.
+- Runtime KV layout preserves the compiler memory layout decision.
+- Replay/capture fields do not claim CUDA graph capture when this validation
+  path only checks static replay eligibility.
+- Scheduling priority remains conservative when compiler cost confidence is
+  low.
+- Execution statistics are present when a report wants to make measured
+  runtime claims.
+
+Truth boundary: this report validates compiler/runtime contract consistency. It
+does not measure latency, memory, throughput, CUDA graph capture, or backend
+kernel execution.
 
 Implemented metrics:
 
