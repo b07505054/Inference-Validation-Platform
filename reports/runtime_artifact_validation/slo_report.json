@@ -1,13 +1,13 @@
 {
   "job_id": "runtime-artifact-validation-001",
   "passed": true,
-  "ttft_p95_ms": 38.316,
+  "ttft_p95_ms": 35.271,
   "tpot_p95_ms": 3.574,
-  "e2e_p95_ms": 1774.462,
-  "queue_wait_p95_ms": 1447.531,
+  "e2e_p95_ms": 1671.553,
+  "queue_wait_p95_ms": 1347.667,
   "slo_violation_rate": 0.0,
   "admission_rejection_rate": 0.0,
-  "tokens_per_second": 1200.054,
-  "requests_per_second": 16.0007,
+  "tokens_per_second": 1263.127,
+  "requests_per_second": 16.8417,
   "oom_events": 0
 }

@@ -21,16 +21,16 @@
   },
   "aggregate_policy_summaries": {
     "fcfs_fixed_batch": {
-      "p95_latency_ms": 7983.349,
+      "p95_latency_ms": 7550.984,
       "tpot_p95_ms": 3.26,
-      "ttft_p95_ms": 175.864,
-      "tokens_per_second": 283.685
+      "ttft_p95_ms": 112.961,
+      "tokens_per_second": 298.531
     },
     "cost_aware_memory_pressure_page_prefetch": {
-      "p95_latency_ms": 1774.462,
+      "p95_latency_ms": 1671.553,
       "tpot_p95_ms": 3.574,
-      "ttft_p95_ms": 154.956,
-      "tokens_per_second": 1200.054
+      "ttft_p95_ms": 94.39,
+      "tokens_per_second": 1263.127
     }
   }
 }

@@ -1,19 +1,19 @@
 # Runtime Artifact Validation Report: runtime-artifact-validation-001
 
 **Result:** PASS
-**Source runtime:** `/Users/allen/Documents/Codex/project/heterogeneous-inference-runtime/results/llm_runtime_artifacts`
+**Source runtime:** `/Users/allen/Documents/Codex/project/systems-portfolio/heterogeneous-inference-runtime/results/llm_runtime_artifacts`
 **Model:** `tiny-gpt`
 
 ## Prefill / Decode
 
-- Prefill latency: `38.316` ms
+- Prefill latency: `35.271` ms
 - p95 decode latency: `3.574` ms
-- Tokens/sec: `1200.054`
+- Tokens/sec: `1263.127`
 
 ## SLO
 
-- p95 end-to-end latency: `1774.462` ms
-- p95 queue wait: `1447.531` ms
+- p95 end-to-end latency: `1671.553` ms
+- p95 queue wait: `1347.667` ms
 - OOM events: `0`
 - Admission rejection rate: `0.0`
 
@@ -21,7 +21,7 @@
 
 - Peak blocks used: `278` / `512`
 - Block utilization: `0.543`
-- Fragmentation ratio: `0.05`
+- Fragmentation ratio: `0.0`
 - Peak KV cache: `868.75` MB
 
 ## Scheduler
@@ -29,14 +29,14 @@
 - Policy: `cost_aware_memory_pressure_page_prefetch`
 - Decode batch events: `5`
 - Avg decode batch size: `6.4`
-- p95 queue wait: `1447.531` ms
+- p95 queue wait: `1347.667` ms
 
 ## Runtime Decision Validation
 
 - Selected policy: `cost_aware_memory_pressure_page_prefetch`
 - Decision validation passed: `True`
-- Tokens/sec delta: `916.369`
-- p95 latency delta: `-6208.887` ms
+- Tokens/sec delta: `964.596`
+- p95 latency delta: `-5879.431` ms
 - Decode batch efficiency delta: `0.675`
 - Pressure-limited candidates: `20`
 - Regression detected: `False`
@@ -60,26 +60,26 @@
 - Lifecycle complete: `True`
 - Page lifecycle balanced: `True`
 - Hard-limit behavior: `True`
-- TTFT p95: `2825.94` ms
-- TPOT p95: `4.957` ms
-- Page hit rate: `0.8654`
+- TTFT p95: `2750.905` ms
+- TPOT p95: `5.116` ms
+- Page hit rate: `0.0462`
 
 ## Serving Framework Targets
 
 - Selected style: `vllm_sglang_style`
 - Validation passed: `True`
 - Available styles: `['baseline_fcfs', 'tensorrt_llm_aligned_local_runtime_policy', 'tensorrt_style', 'triton_server_style', 'vllm_sglang_style', 'vllm_style_page_prefetch']`
-- TTFT: `38.316` ms
+- TTFT: `35.271` ms
 - TPOT p95: `3.574` ms/token
-- Throughput: `1200.054` tokens/s
+- Throughput: `1263.127` tokens/s
 - Peak KV cache: `868.75` MB
 - Selection reason: `page prefetch candidate improved TPOT/e2e/throughput without KV regression`
 
 ## Cold Start / Initialization
 
 - Validation passed: `True`
-- Cold TTFT: `98.316` ms
-- Warm TTFT: `38.316` ms
+- Cold TTFT: `95.271` ms
+- Warm TTFT: `35.271` ms
 - First request penalty: `60.0` ms
 - Steady-state TPOT p95: `3.574` ms/token
 - Available artifacts: `['onnx_fp32', 'tensorrt_fp16_engine', 'tensorrt_int8_engine', 'executorch_xnnpack_pte']`
@@ -91,12 +91,12 @@
   input: `vllm style synthetic request/decode trace`
   decision: `continuous batching admission and paged-KV pressure cap`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1200.054` tokens/s
+  throughput: `1263.127` tokens/s
 - SGLang validation passed: `True`
   input: `sglang style synthetic request/decode trace`
   decision: `request/decode scheduling with prefix-reuse metadata`
   metric: `TTFT, TPOT, throughput, queue wait, KV pressure, decode batch efficiency`
-  throughput: `1200.054` tokens/s
+  throughput: `1263.127` tokens/s
 
 ## Technology Gate
 
@@ -114,7 +114,7 @@
 - Selected policy: `cost_aware_memory_pressure_page_prefetch`
 - Hit rate: `0.8808`
 - TPOT p95 delta: `-0.7763` ms/token
-- Tokens/sec delta: `176.521`
+- Tokens/sec delta: `194.063`
 
 ## Distributed Serving
 

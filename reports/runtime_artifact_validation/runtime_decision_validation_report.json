@@ -8,12 +8,12 @@
     "completed_requests": 32,
     "rejected_requests": 0,
     "delayed_requests": 0,
-    "p95_latency_ms": 7983.349,
+    "p95_latency_ms": 7550.984,
     "ttft_p50_ms": 52.995,
-    "ttft_p95_ms": 175.864,
+    "ttft_p95_ms": 112.961,
     "tpot_p50_ms": 2.46,
     "tpot_p95_ms": 3.26,
-    "tokens_per_second": 283.685,
+    "tokens_per_second": 298.531,
     "peak_kv_cache_mb": 225.0,
     "avg_decode_batch_size": 1.0,
     "decode_batch_efficiency": 0.125,
@@ -22,7 +22,7 @@
     },
     "batch_cap_reductions": 0,
     "pressure_limited_candidates": 0,
-    "finish_time_ms": 8460.092,
+    "finish_time_ms": 8039.359,
     "page_prefetch": {
       "enabled": false
     },
@@ -43,12 +43,12 @@
     "completed_requests": 32,
     "rejected_requests": 0,
     "delayed_requests": 0,
-    "p95_latency_ms": 2119.371,
-    "ttft_p50_ms": 38.316,
-    "ttft_p95_ms": 154.956,
+    "p95_latency_ms": 2016.462,
+    "ttft_p50_ms": 35.271,
+    "ttft_p95_ms": 94.39,
     "tpot_p50_ms": 3.022,
     "tpot_p95_ms": 4.351,
-    "tokens_per_second": 1023.533,
+    "tokens_per_second": 1069.064,
     "peak_kv_cache_mb": 868.75,
     "avg_decode_batch_size": 6.4,
     "decode_batch_efficiency": 0.8,
@@ -57,7 +57,7 @@
     },
     "batch_cap_reductions": 0,
     "pressure_limited_candidates": 20,
-    "finish_time_ms": 2344.819,
+    "finish_time_ms": 2244.955,
     "page_prefetch": {
       "enabled": false
     },
@@ -78,12 +78,12 @@
     "completed_requests": 32,
     "rejected_requests": 0,
     "delayed_requests": 0,
-    "p95_latency_ms": 1774.462,
-    "ttft_p50_ms": 38.316,
-    "ttft_p95_ms": 154.956,
+    "p95_latency_ms": 1671.553,
+    "ttft_p50_ms": 35.271,
+    "ttft_p95_ms": 94.39,
     "tpot_p50_ms": 2.488,
     "tpot_p95_ms": 3.574,
-    "tokens_per_second": 1200.054,
+    "tokens_per_second": 1263.127,
     "peak_kv_cache_mb": 868.75,
     "avg_decode_batch_size": 6.4,
     "decode_batch_efficiency": 0.8,
@@ -92,7 +92,7 @@
     },
     "batch_cap_reductions": 0,
     "pressure_limited_candidates": 20,
-    "finish_time_ms": 1999.91,
+    "finish_time_ms": 1900.046,
     "page_prefetch": {
       "enabled": true,
       "policy": "vllm_style_allocated_kv_page_prefetch",
@@ -120,9 +120,9 @@
     "invariants": {}
   },
   "improvement": {
-    "tokens_per_second_delta": 916.369,
+    "tokens_per_second_delta": 964.596,
     "decode_batch_efficiency_delta": 0.675,
-    "p95_latency_ms_delta": -6208.887
+    "p95_latency_ms_delta": -5879.431
   },
   "checks": {
     "selected_optimized": true,

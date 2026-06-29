@@ -1,7 +1,7 @@
 {
   "artifact_set": "runtime_artifact_validation",
-  "source_runtime_artifacts": "/Users/allen/Documents/Codex/project/heterogeneous-inference-runtime/results/llm_runtime_artifacts",
-  "output_dir": "/Users/allen/Documents/Codex/project/inference-validation-platform/reports/runtime_artifact_validation",
+  "source_runtime_artifacts": "/Users/allen/Documents/Codex/project/systems-portfolio/heterogeneous-inference-runtime/results/llm_runtime_artifacts",
+  "output_dir": "/Users/allen/Documents/Codex/project/systems-portfolio/Inference-Validation-Platform/reports/runtime_artifact_validation",
   "files": [
     "backend_validation_report.json",
     "cold_start_validation_report.json",

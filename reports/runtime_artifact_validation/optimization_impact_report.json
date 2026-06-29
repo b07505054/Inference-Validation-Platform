@@ -1,0 +1,18 @@
+{
+  "artifact_name": "distributed_runtime_plan",
+  "model_name": "",
+  "selected_policy": "",
+  "optimization_evidence": [
+    {
+      "optimization_name": "prefix_cache",
+      "decision_name": "miss",
+      "affected_metrics": [],
+      "tradeoff_metrics": [],
+      "truth_boundary": "",
+      "evidence_status": "warn",
+      "explanation": "Cache miss: no prefill time saved, TTFT and TPOT unchanged. Warnings: truth_boundary is missing or empty; all optimization claims must carry an explicit truth boundary | missing before/after metric fields: baseline_ttft_ms, optimized_ttft_ms, baseline_tpot_ms, optimized_tpot_ms; optimization claims require explicit before and after values"
+    }
+  ],
+  "overall_status": "warn",
+  "truth_boundary": "optimization_impact_validation_simulated_not_measured_cluster_performance"
+}

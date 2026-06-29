@@ -4,7 +4,7 @@
   "decode_batch_events": 5,
   "avg_decode_batch_size": 6.4,
   "max_active_requests": 8,
-  "avg_queue_wait_ms": 715.2374,
-  "p95_queue_wait_ms": 1447.531,
+  "avg_queue_wait_ms": 649.3865,
+  "p95_queue_wait_ms": 1347.667,
   "decode_batch_efficiency": 0.8
 }

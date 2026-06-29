@@ -6,13 +6,13 @@
   "correctness_passed": true,
   "decode_latency_budget_ms": 20.0,
   "e2e_latency_budget_ms": 1800.0,
-  "prefill_latency_ms": 38.316,
+  "prefill_latency_ms": 35.271,
   "avg_decode_latency_ms": 2.615,
   "p95_decode_latency_ms": 3.574,
   "p99_decode_latency_ms": 3.864,
-  "p95_latency_ms": 1774.462,
-  "p99_latency_ms": 1785.895,
-  "tokens_per_second": 1200.054,
+  "p95_latency_ms": 1671.553,
+  "p99_latency_ms": 1682.986,
+  "tokens_per_second": 1263.127,
   "peak_memory_mb": 1636.75,
   "oom_events": 0
 }

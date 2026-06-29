@@ -24,8 +24,8 @@
       "request_id": "req-003",
       "arrival_ms": 295.207,
       "prefill_start_ms": 295.207,
-      "decode_start_ms": 465.188,
-      "finish_ms": 875.358,
+      "decode_start_ms": 395.711,
+      "finish_ms": 805.881,
       "status": "completed",
       "tokens_generated": 32,
       "queue_wait_ms": 270.231
@@ -52,23 +52,23 @@
     },
     {
       "request_id": "req-006",
-      "arrival_ms": 465.188,
+      "arrival_ms": 395.711,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 875.358,
+      "finish_ms": 805.881,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 420.285
+      "queue_wait_ms": 350.808
     },
     {
       "request_id": "req-007",
-      "arrival_ms": 465.188,
+      "arrival_ms": 395.711,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 875.358,
+      "finish_ms": 805.881,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 416.758
+      "queue_wait_ms": 347.281
     },
     {
       "request_id": "req-008",
@@ -112,213 +112,213 @@
     },
     {
       "request_id": "req-012",
-      "arrival_ms": 465.188,
+      "arrival_ms": 395.711,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 875.358,
+      "finish_ms": 805.881,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 375.105
+      "queue_wait_ms": 305.628
     },
     {
       "request_id": "req-013",
-      "arrival_ms": 875.358,
-      "prefill_start_ms": 875.358,
-      "decode_start_ms": 970.213,
-      "finish_ms": 1302.652,
+      "arrival_ms": 805.881,
+      "prefill_start_ms": 805.881,
+      "decode_start_ms": 875.816,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 32,
-      "queue_wait_ms": 772.361
+      "queue_wait_ms": 702.884
     },
     {
       "request_id": "req-014",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 32,
-      "queue_wait_ms": 851.646
+      "queue_wait_ms": 757.249
     },
     {
       "request_id": "req-015",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 842.814
+      "queue_wait_ms": 748.417
     },
     {
       "request_id": "req-016",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 32,
-      "queue_wait_ms": 833.576
+      "queue_wait_ms": 739.179
     },
     {
       "request_id": "req-017",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 32,
-      "queue_wait_ms": 822.996
+      "queue_wait_ms": 728.599
     },
     {
       "request_id": "req-018",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 809.311
+      "queue_wait_ms": 714.914
     },
     {
       "request_id": "req-019",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 804.863
+      "queue_wait_ms": 710.466
     },
     {
       "request_id": "req-020",
-      "arrival_ms": 970.213,
+      "arrival_ms": 875.816,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1302.652,
+      "finish_ms": 1208.255,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 798.94
+      "queue_wait_ms": 704.543
     },
     {
       "request_id": "req-021",
-      "arrival_ms": 1302.652,
-      "prefill_start_ms": 1302.652,
-      "decode_start_ms": 1333.127,
-      "finish_ms": 1675.585,
+      "arrival_ms": 1208.255,
+      "prefill_start_ms": 1208.255,
+      "decode_start_ms": 1236.308,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 1120.15
+      "queue_wait_ms": 1025.753
     },
     {
       "request_id": "req-022",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 1142.079
+      "queue_wait_ms": 1045.26
     },
     {
       "request_id": "req-023",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 1134.683
+      "queue_wait_ms": 1037.864
     },
     {
       "request_id": "req-024",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 1123.729
+      "queue_wait_ms": 1026.91
     },
     {
       "request_id": "req-025",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 1110.58
+      "queue_wait_ms": 1013.761
     },
     {
       "request_id": "req-026",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 1106.296
+      "queue_wait_ms": 1009.477
     },
     {
       "request_id": "req-027",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 1102.894
+      "queue_wait_ms": 1006.075
     },
     {
       "request_id": "req-028",
-      "arrival_ms": 1333.127,
+      "arrival_ms": 1236.308,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1675.585,
+      "finish_ms": 1578.766,
       "status": "completed",
       "tokens_generated": 64,
-      "queue_wait_ms": 1088.739
+      "queue_wait_ms": 991.92
     },
     {
       "request_id": "req-029",
-      "arrival_ms": 1675.585,
-      "prefill_start_ms": 1675.585,
-      "decode_start_ms": 1713.901,
-      "finish_ms": 1999.91,
+      "arrival_ms": 1578.766,
+      "prefill_start_ms": 1578.766,
+      "decode_start_ms": 1614.037,
+      "finish_ms": 1900.046,
       "status": "completed",
       "tokens_generated": 96,
-      "queue_wait_ms": 1426.959
+      "queue_wait_ms": 1330.14
     },
     {
       "request_id": "req-030",
-      "arrival_ms": 1713.901,
+      "arrival_ms": 1614.037,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1999.91,
+      "finish_ms": 1900.046,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 1453.323
+      "queue_wait_ms": 1353.459
     },
     {
       "request_id": "req-031",
-      "arrival_ms": 1713.901,
+      "arrival_ms": 1614.037,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1999.91,
+      "finish_ms": 1900.046,
       "status": "completed",
       "tokens_generated": 128,
-      "queue_wait_ms": 1447.531
+      "queue_wait_ms": 1347.667
     },
     {
       "request_id": "req-032",
-      "arrival_ms": 1713.901,
+      "arrival_ms": 1614.037,
       "prefill_start_ms": null,
       "decode_start_ms": null,
-      "finish_ms": 1999.91,
+      "finish_ms": 1900.046,
       "status": "completed",
       "tokens_generated": 32,
-      "queue_wait_ms": 1446.076
+      "queue_wait_ms": 1346.212
     }
   ]
 }
