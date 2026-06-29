@@ -14,6 +14,11 @@ from src.ivp.statistics import (
     percentile,
     regression_gate,
 )
+try:
+    from src.ivp.optimization_impact_integration import run_optimization_impact_integration as _run_opt_impact
+    _OPTIMIZATION_IMPACT_AVAILABLE = True
+except ImportError:
+    _OPTIMIZATION_IMPACT_AVAILABLE = False
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
@@ -1531,6 +1536,12 @@ def main():
             "files": sorted([*files.keys(), "runtime_validation_report.md"]),
         },
     )
+
+    if _OPTIMIZATION_IMPACT_AVAILABLE:
+        try:
+            _run_opt_impact(artifact_dir=runtime_dir, output_dir=output_dir)
+        except Exception:
+            pass  # optimization impact report is optional; never fail the main validation
 
     print(output_dir)
 
